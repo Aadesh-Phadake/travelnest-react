@@ -1,4 +1,3 @@
-//added files 
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -55,7 +54,7 @@ const AdminDashboard = () => {
   const [isActionLoading, setIsActionLoading] = useState(false);
 
   const isAdmin = user && (user.role === 'admin' || user.username === 'TravelNest');
-  //using useffect after the admin login 
+
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -147,7 +146,6 @@ const AdminDashboard = () => {
 
   const totalUsers = usersData.length;
   const totalHotels = hotelsData.length;
-
   // Gross booking revenue (what travellers paid). Prefer backend summary, fallback to hotel aggregation.
   const grossRevenue =
     commissionSummary.totalRevenue ??
@@ -171,7 +169,6 @@ const AdminDashboard = () => {
     if (Number.isNaN(d.getTime())) return null;
     return d.toLocaleDateString('en-GB');
   };
-  //handling deleteuser
 
   const handleDeleteUser = async (id) => {
     if (!window.confirm('Delete this user and all their bookings?')) return;
@@ -234,7 +231,7 @@ const AdminDashboard = () => {
       setIsActionLoading(false);
     }
   };
-  //handling deletehotel
+
   const handleDeleteHotel = async (id) => {
     if (!window.confirm('Delete this hotel permanently?')) return;
     try {
