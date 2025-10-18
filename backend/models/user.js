@@ -1,8 +1,19 @@
+/**
+ * @file user.js
+ * @description Mongoose schema for User model, defining user roles, profiles, memberships, and financial data.
+ */
+
 const mongoose = require('mongoose');
 const schema = mongoose.Schema;
 const passportLocalMongoose = require('passport-local-mongoose');
 
+/**
+ * User Schema
+ * Defines the structure for user documents in the database.
+ * Supports multiple roles: traveller, manager, admin with role-specific fields.
+ */
 const userSchema = new schema({
+    // Authentication fields
     email: {
         type: String,
         required: true,
@@ -97,6 +108,14 @@ const userSchema = new schema({
     timestamps: true  // This will automatically add createdAt and updatedAt fields
 });
 
+/**
+ * Plugin configuration
+ * Adds Passport-Local Mongoose methods for authentication
+ */
 userSchema.plugin(passportLocalMongoose);
 
+/**
+ * Export the User model
+ * Creates and exports the Mongoose model for User documents
+ */
 module.exports = mongoose.model('User', userSchema);
