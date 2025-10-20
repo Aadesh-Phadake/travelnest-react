@@ -112,6 +112,8 @@ module.exports.requireManager = (req, res, next) => {
 
 module.exports.requireAdmin = module.exports.requireRole(['admin']);
 
+// Admin authentication middleware - ensures only users with 'admin' role can access protected routes
+
 module.exports.requireManagerOrAdmin = (req, res, next) => {
     if (!req.user) {
         return res.status(401).json({ message: 'You must be logged in' });
