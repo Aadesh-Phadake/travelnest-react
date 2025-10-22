@@ -25,13 +25,18 @@ function requireAdmin(req, res, next) {
     return res.status(403).json({ message: 'Admin access required' });
 }
 
-// Get all users with statistics
+/**
+ * GET /api/admin/users
+ * Get all users with their booking statistics
+ * Includes total bookings, total spent, and last booking date
+ */
 router.get('/users', isLoggedIn, requireAdmin, async (req, res) => {
     try {
+        // Fetch all users except the master TravelNest account
         const users = await User.find({ username: { $ne: "TravelNest" } })
             .sort('-createdAt');
         
-        // Aggregate booking statistics for all users in one query
+        // Aggregate booking statistics for all users in one efficient query
         const bookingStats = await Booking.aggregate([
             {
                 $group: {
@@ -43,13 +48,13 @@ router.get('/users', isLoggedIn, requireAdmin, async (req, res) => {
             }
         ]);
 
-        // Create a map for O(1) lookup
+        // Create a map for O(1) lookup performance
         const statsMap = {};
         bookingStats.forEach(stat => {
             if (stat._id) statsMap[String(stat._id)] = stat;
         });
         
-        // Map stats to users
+        // Map booking stats to users
         const usersWithStats = users.map((user) => {
             const stat = statsMap[String(user._id)] || {};
             
@@ -73,7 +78,11 @@ router.get('/users', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Get all hotels with statistics
+/**
+ * GET /api/admin/hotels
+ * Get all approved hotels with their booking and revenue statistics
+ * Calculates platform revenue based on commission and owner revenue share
+ */
 router.get('/hotels', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         // Only fetch approved hotels (or legacy ones with no status)
@@ -86,7 +95,7 @@ router.get('/hotels', isLoggedIn, requireAdmin, async (req, res) => {
             .populate('owner', 'username email')
             .sort('-createdAt');
         
-        const OWNER_REVENUE_RATE = 0.15;
+        const OWNER_REVENUE_RATE = 0.15; // 15% commission on owner gross revenue
 
         // Aggregate booking stats for all hotels in one query
         const bookingStats = await Booking.aggregate([
@@ -141,7 +150,11 @@ router.get('/hotels', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Get per-owner (hotel manager) statistics
+/**
+ * GET /api/admin/owners
+ * Get per-owner (hotel manager) statistics
+ * Shows revenue breakdown, hotel counts, and platform earnings per manager
+ */
 router.get('/owners', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const OWNER_REVENUE_RATE = 0.15;
@@ -214,7 +227,7 @@ router.get('/owners', isLoggedIn, requireAdmin, async (req, res) => {
             ...owners.map(u => String(u._id))
         ]);
 
-        // 5) Build final array
+        // 5) Build final array with comprehensive stats
         const ownersWithStats = Array.from(finalOwnerIds).map((idStr) => {
             const stat = statsByOwner[idStr] || {};
             const user = ownersById[idStr] || {};
@@ -251,7 +264,11 @@ router.get('/owners', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Delete user
+/**
+ * DELETE /api/admin/users/:id
+ * Delete a user and all associated data (bookings, hotels, reviews)
+ * Cascading delete to maintain data integrity
+ */
 router.delete('/users/:id', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -302,7 +319,10 @@ router.delete('/users/:id', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Delete hotel
+/**
+ * DELETE /api/admin/hotels/:id
+ * Delete a hotel and all associated bookings
+ */
 router.delete('/hotels/:id', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -323,7 +343,11 @@ router.delete('/hotels/:id', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Update user membership status
+/**
+ * PATCH /api/admin/users/:id/membership
+ * Update user membership status (activate/deactivate)
+ * When activating, sets 30-day membership period
+ */
 router.patch('/users/:id/membership', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -353,7 +377,10 @@ router.patch('/users/:id/membership', isLoggedIn, requireAdmin, async (req, res)
 
 // ===== Manager approval APIs =====
 
-// Get pending manager approvals
+/**
+ * GET /api/admin/managers/pending
+ * Get all pending manager approval requests
+ */
 router.get('/managers/pending', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const managers = await User.find({ role: 'manager', isApproved: false })
@@ -365,7 +392,10 @@ router.get('/managers/pending', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Approve manager
+/**
+ * PATCH /api/admin/managers/:id/approve
+ * Approve a manager request, allowing them to manage hotels
+ */
 router.patch('/managers/:id/approve', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -385,7 +415,10 @@ router.patch('/managers/:id/approve', isLoggedIn, requireAdmin, async (req, res)
     }
 });
 
-// Reject manager (optional: demote to traveller)
+/**
+ * PATCH /api/admin/managers/:id/reject
+ * Reject a manager request, demoting them back to traveller role
+ */
 router.patch('/managers/:id/reject', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -408,7 +441,10 @@ router.patch('/managers/:id/reject', isLoggedIn, requireAdmin, async (req, res) 
 
 // ===== Hotel approval APIs =====
 
-// Get pending hotel approvals
+/**
+ * GET /api/admin/hotels/pending
+ * Get all pending hotel approval requests
+ */
 router.get('/hotels/pending', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const hotels = await Listing.find({ status: 'pending' })
@@ -421,7 +457,10 @@ router.get('/hotels/pending', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Approve hotel
+/**
+ * PATCH /api/admin/hotels/:id/approve
+ * Approve a hotel listing, making it available for booking
+ */
 router.patch('/hotels/:id/approve', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -441,7 +480,10 @@ router.patch('/hotels/:id/approve', isLoggedIn, requireAdmin, async (req, res) =
     }
 });
 
-// Reject hotel
+/**
+ * PATCH /api/admin/hotels/:id/reject
+ * Reject a hotel listing with optional reason
+ */
 router.patch('/hotels/:id/reject', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -467,7 +509,10 @@ router.patch('/hotels/:id/reject', isLoggedIn, requireAdmin, async (req, res) =>
     }
 });
 
-// Helper function to generate consecutive periods
+/**
+ * Helper function to generate consecutive periods for chart data
+ * Creates consistent time periods (days/weeks/months/years) for analytics
+ */
 function generateConsecutivePeriods(period, count = 12) {
     const periods = [];
     const now = new Date();
@@ -515,7 +560,11 @@ function generateConsecutivePeriods(period, count = 12) {
     return periods;
 }
 
-// Get chart data for dashboard
+/**
+ * GET /api/admin/charts/revenue
+ * Get revenue chart data for dashboard analytics
+ * Supports different time periods (day/week/month/year)
+ */
 router.get('/charts/revenue', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { period = 'month' } = req.query;
@@ -607,7 +656,10 @@ router.get('/charts/revenue', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Get top hotels data
+/**
+ * GET /api/admin/charts/top-hotels
+ * Get top 5 performing hotels by booking count for dashboard
+ */
 router.get('/charts/top-hotels', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const topHotels = await Booking.aggregate([
@@ -658,7 +710,11 @@ router.get('/charts/top-hotels', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Get bookings trend data
+/**
+ * GET /api/admin/charts/bookings-trend
+ * Get booking trends chart data for dashboard analytics
+ * Supports different time periods (day/week/month/year)
+ */
 router.get('/charts/bookings-trend', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { period = 'month' } = req.query;
@@ -746,7 +802,11 @@ router.get('/charts/bookings-trend', isLoggedIn, requireAdmin, async (req, res) 
     }
 });
 
-// Commission summary for admin overview
+/**
+ * GET /api/admin/commission/summary
+ * Get commission summary for admin overview
+ * Shows total commission, revenue, bookings, and average commission per booking
+ */
 router.get('/commission/summary', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const summary = await Booking.aggregate([
@@ -778,7 +838,10 @@ router.get('/commission/summary', isLoggedIn, requireAdmin, async (req, res) => 
     }
 });
 
-// Get all contact messages
+/**
+ * GET /api/admin/contact-messages
+ * Get all contact messages from users/visitors
+ */
 router.get('/contact-messages', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const messages = await ContactMessage.find()
