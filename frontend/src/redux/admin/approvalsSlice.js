@@ -2,6 +2,16 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 
+/**
+ * Redux slice for managing admin approval operations
+ * Handles pending manager and hotel approvals, including approve/reject actions
+ */
+
+/**
+ * Async thunk to fetch all pending approvals (both managers and hotels)
+ * Makes parallel API calls to GET /api/admin/managers/pending and GET /api/admin/hotels/pending
+ * Returns combined data for both pending managers and hotels
+ */
 export const fetchPendingApprovals = createAsyncThunk(
     'approvals/fetchPendingApprovals',
     async (_, { rejectWithValue }) => {
@@ -20,6 +30,11 @@ export const fetchPendingApprovals = createAsyncThunk(
     }
 );
 
+/**
+ * Async thunk to approve a manager request
+ * Calls PATCH /api/admin/managers/:id/approve endpoint
+ * Grants manager role and approval status to the user
+ */
 export const approveManager = createAsyncThunk(
     'approvals/approveManager',
     async (id, { rejectWithValue }) => {
@@ -34,6 +49,11 @@ export const approveManager = createAsyncThunk(
     }
 );
 
+/**
+ * Async thunk to reject a manager request
+ * Calls PATCH /api/admin/managers/:id/reject endpoint
+ * Demotes user back to traveller role and removes approval
+ */
 export const rejectManager = createAsyncThunk(
     'approvals/rejectManager',
     async (id, { rejectWithValue }) => {
@@ -48,6 +68,11 @@ export const rejectManager = createAsyncThunk(
     }
 );
 
+/**
+ * Async thunk to approve a hotel listing
+ * Calls PATCH /api/admin/hotels/:id/approve endpoint
+ * Makes the hotel available for booking on the platform
+ */
 export const approveHotel = createAsyncThunk(
     'approvals/approveHotel',
     async (id, { rejectWithValue }) => {
@@ -62,13 +87,19 @@ export const approveHotel = createAsyncThunk(
     }
 );
 
+/**
+ * Async thunk to reject a hotel listing
+ * Calls PATCH /api/admin/hotels/:id/reject endpoint
+ * Accepts either a string ID or an object with id and reason properties
+ * Sets hotel status to rejected with optional rejection reason
+ */
 export const rejectHotel = createAsyncThunk(
     'approvals/rejectHotel',
     async (payload, { rejectWithValue }) => {
         try {
             const id = typeof payload === 'object' ? payload.id : payload;
             const reason = typeof payload === 'object' ? payload.reason : null;
-            
+
             await api.patch(`/api/admin/hotels/${id}/reject`, { reason });
             toast.success('Hotel rejected');
             return id;
@@ -79,17 +110,22 @@ export const rejectHotel = createAsyncThunk(
     }
 );
 
+/**
+ * Approvals slice configuration
+ * Manages state for pending managers, pending hotels, loading states, and errors
+ */
 const approvalsSlice = createSlice({
     name: 'approvals',
     initialState: {
-        pendingManagers: [],
-        pendingHotels: [],
-        loading: false,
-        error: null
+        pendingManagers: [], // Array of users requesting manager approval
+        pendingHotels: [], // Array of hotels pending approval
+        loading: false, // Loading state for async operations
+        error: null // Error message if any operation fails
     },
-    reducers: {},
+    reducers: {}, // No synchronous reducers needed
     extraReducers: (builder) => {
         builder
+            // Fetch pending approvals cases
             .addCase(fetchPendingApprovals.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -103,16 +139,24 @@ const approvalsSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             })
+
+            // Manager approval cases
             .addCase(approveManager.fulfilled, (state, action) => {
+                // Remove approved manager from pending list
                 state.pendingManagers = state.pendingManagers.filter(m => m._id !== action.payload);
             })
             .addCase(rejectManager.fulfilled, (state, action) => {
+                // Remove rejected manager from pending list
                 state.pendingManagers = state.pendingManagers.filter(m => m._id !== action.payload);
             })
+
+            // Hotel approval cases
             .addCase(approveHotel.fulfilled, (state, action) => {
+                // Remove approved hotel from pending list
                 state.pendingHotels = state.pendingHotels.filter(h => h._id !== action.payload);
             })
             .addCase(rejectHotel.fulfilled, (state, action) => {
+                // Remove rejected hotel from pending list
                 state.pendingHotels = state.pendingHotels.filter(h => h._id !== action.payload);
             });
     }
