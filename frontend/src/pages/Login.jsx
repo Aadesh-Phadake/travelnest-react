@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../redux/authSlice';
 import toast from 'react-hot-toast';
 
+//Login component
 const Login = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
@@ -25,11 +26,11 @@ const Login = () => {
             navigate('/listings');
         }
     }, [error, user, navigate, dispatch]);
-
+    //handling chnage 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
-
+    //handling submit 
     const handleSubmit = (e) => {
         e.preventDefault();
         // Dispatch the Login Thunk
