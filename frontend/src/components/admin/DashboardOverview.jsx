@@ -1,3 +1,8 @@
+/**
+ * @file DashboardOverview.jsx
+ * @description Admin dashboard overview component displaying key metrics, charts, and analytics.
+ */
+
 import React from 'react';
 import { useAdminDashboard } from '../../hooks/admin/useAdminDashboard';
 import {
@@ -20,6 +25,15 @@ import {
   Bar,
 } from 'recharts';
 
+/**
+ * PeriodPills Component
+ * 
+ * A reusable component for selecting time periods (daily, weekly, monthly, yearly).
+ * Renders as pill-shaped buttons with active state styling.
+ * 
+ * @param {string} value - The currently selected period value.
+ * @param {function} onChange - Callback function to handle period change.
+ */
 const PeriodPills = ({ value, onChange }) => {
   const options = [
     { value: 'day', label: 'Daily' },
@@ -46,6 +60,15 @@ const PeriodPills = ({ value, onChange }) => {
   );
 };
 
+/**
+ * DashboardOverview Component
+ * 
+ * This component renders the admin dashboard overview, displaying key metrics,
+ * charts for revenue and bookings, top performing hotels, and user distribution.
+ * It uses data from the useAdminDashboard hook and allows navigation to other tabs.
+ * 
+ * @param {function} setTab - Function to change the active tab in the admin dashboard.
+ */
 const DashboardOverview = ({ setTab }) => {
   const {
     users,
@@ -64,15 +87,15 @@ const DashboardOverview = ({ setTab }) => {
     commissionSummary
   } = useAdminDashboard();
 
-  // Calculations
-  const totalHotels = hotels.length;
-  const grossRevenue = commissionSummary.totalRevenue ?? hotels.reduce((sum, h) => sum + (h.revenue || 0), 0);
-  const totalBookings = hotels.reduce((sum, h) => sum + (h.bookingCount || 0), 0);
-  const totalCommission = commissionSummary.totalCommission || 0;
-  const ownerGrossRevenue = Math.max(0, grossRevenue - totalCommission);
-  const ownerCommission = ownerGrossRevenue * 0.15;
-  const platformRevenue = totalCommission + ownerCommission;
-  const totalPending = pendingManagers.length + pendingHotels.length;
+  // Calculations for dashboard metrics
+  const totalHotels = hotels.length; // Total number of hotels listed on the platform
+  const grossRevenue = commissionSummary.totalRevenue ?? hotels.reduce((sum, h) => sum + (h.revenue || 0), 0); // Total revenue from all bookings, fallback to sum of hotel revenues
+  const totalBookings = hotels.reduce((sum, h) => sum + (h.bookingCount || 0), 0); // Total number of bookings across all hotels
+  const totalCommission = commissionSummary.totalCommission || 0; // Total commission earned by the platform
+  const ownerGrossRevenue = Math.max(0, grossRevenue - totalCommission); // Revenue after deducting platform commission
+  const ownerCommission = ownerGrossRevenue * 0.15; // Additional 15% service fee on owner revenue
+  const platformRevenue = totalCommission + ownerCommission; // Net revenue for the platform
+  const totalPending = pendingManagers.length + pendingHotels.length; // Total pending approvals
 
   if (loading) {
     return (
@@ -179,6 +202,7 @@ const DashboardOverview = ({ setTab }) => {
               <PeriodPills value={revenuePeriod} onChange={setRevenuePeriod} />
             </div>
             <div className="h-[350px] w-full">
+              {/* Transform revenue data to include platform revenue calculation for each period */}
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={revenueSeries.map((p) => {
@@ -323,6 +347,7 @@ const DashboardOverview = ({ setTab }) => {
                 <span className="text-gray-600 dark:text-gray-300 flex items-center gap-2">
                   <Users className="w-4 h-4" /> Travellers
                 </span>
+                {/* Travellers: users excluding managers and admins */}
                 <span className="font-semibold">{users.filter(u => u.role !== 'manager' && u.role !== 'admin').length}</span>
               </div>
               <div className="w-full bg-gray-100 rounded-full h-2">
@@ -336,6 +361,7 @@ const DashboardOverview = ({ setTab }) => {
                 <span className="text-gray-600 dark:text-gray-300 flex items-center gap-2">
                   <Building2 className="w-4 h-4" /> Managers
                 </span>
+                {/* Managers: hotel owners/managers */}
                 <span className="font-semibold">{owners.length}</span>
               </div>
               <div className="w-full bg-gray-100 rounded-full h-2">
