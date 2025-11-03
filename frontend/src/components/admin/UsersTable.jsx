@@ -1,3 +1,8 @@
+/**
+ * @file UsersTable.jsx
+ * @description Admin component for displaying and managing all users in a table format with search, pagination, and actions.
+ */
+
 import React, { useState } from 'react';
 import { useAdminUsers } from '../../hooks/admin/useAdminUsers';
 import {
@@ -9,19 +14,25 @@ import {
   Mail
 } from 'lucide-react';
 
+/**
+ * UsersTable Component
+ * 
+ * Displays a table of all users with search functionality, pagination, and actions to update membership or remove users.
+ * Uses the useAdminUsers hook for data and operations.
+ */
 const UsersTable = () => {
   const { users, removeUser, updateMembership } = useAdminUsers();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Filter users
+  // Filter users based on search term in username or email
   const filteredUsers = users.filter(user =>
     user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Pagination
+  // Pagination calculations
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
@@ -49,6 +60,7 @@ const UsersTable = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
+        {/* User table displaying filtered and paginated users */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
@@ -127,7 +139,7 @@ const UsersTable = () => {
           </table>
         </div>
         
-        {/* Pagination */}
+        {/* Pagination controls */}
         {totalPages > 1 && (
           <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <p className="text-sm text-gray-500">
