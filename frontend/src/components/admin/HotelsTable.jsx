@@ -1,3 +1,8 @@
+/**
+ * @file HotelsTable.jsx
+ * @description Admin component for displaying and managing all hotels in a table format with search, pagination, and actions.
+ */
+
 import React, { useState } from 'react';
 import { useAdminHotels } from '../../hooks/admin/useAdminHotels';
 import {
@@ -10,19 +15,25 @@ import {
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 
+/**
+ * HotelsTable Component
+ * 
+ * Displays a table of all hotels with search functionality, pagination, and actions to view or remove hotels.
+ * Uses the useAdminHotels hook for data and operations.
+ */
 const HotelsTable = () => {
   const { hotels, removeHotel } = useAdminHotels();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Filter hotels
+  // Filter hotels based on search term in title or location
   const filteredHotels = hotels.filter(hotel =>
     hotel.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     hotel.location.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Pagination
+  // Pagination calculations
   const totalPages = Math.ceil(filteredHotels.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentHotels = filteredHotels.slice(startIndex, startIndex + itemsPerPage);
@@ -50,6 +61,7 @@ const HotelsTable = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
+        {/* Hotel table displaying filtered and paginated hotels */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
@@ -130,7 +142,7 @@ const HotelsTable = () => {
           </table>
         </div>
         
-        {/* Pagination */}
+        {/* Pagination controls */}
         {totalPages > 1 && (
           <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <p className="text-sm text-gray-500">
