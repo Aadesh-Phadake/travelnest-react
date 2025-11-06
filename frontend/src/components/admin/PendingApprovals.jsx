@@ -1,3 +1,8 @@
+/**
+ * @file PendingApprovals.jsx
+ * @description Admin component for reviewing and approving/rejecting pending manager requests and hotel listings.
+ */
+
 import React from 'react';
 import { useAdminApprovals } from '../../hooks/admin/useAdminApprovals';
 import {
@@ -11,6 +16,13 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+/**
+ * PendingApprovals Component
+ * 
+ * Displays pending manager requests and hotel listings for admin approval.
+ * Allows admins to approve or reject each request using confirmation dialogs.
+ * Uses the useAdminApprovals hook for data and operations.
+ */
 const PendingApprovals = () => {
   const { 
     pendingManagers, 
@@ -24,7 +36,7 @@ const PendingApprovals = () => {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       
-      {/* Pending Managers Section */}
+      {/* Pending Managers Section - displays users requesting manager role */}
       <section>
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
@@ -81,7 +93,7 @@ const PendingApprovals = () => {
         </div>
       </section>
 
-      {/* Pending Hotels Section */}
+      {/* Pending Hotels Section - displays new hotel listings awaiting approval */}
       <section>
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">

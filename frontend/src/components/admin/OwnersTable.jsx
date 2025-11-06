@@ -1,3 +1,8 @@
+/**
+ * @file OwnersTable.jsx
+ * @description Admin component for displaying and managing hotel owners/managers in a table format with search, pagination, and actions.
+ */
+
 import React, { useState } from 'react';
 import { useAdminOwners } from '../../hooks/admin/useAdminOwners';
 import {
@@ -7,19 +12,25 @@ import {
   Mail
 } from 'lucide-react';
 
+/**
+ * OwnersTable Component
+ * 
+ * Displays a table of all hotel owners/managers with search functionality, pagination, and actions to remove owners.
+ * Uses the useAdminOwners hook for data and operations. Shows financial metrics like revenue and commissions.
+ */
 const OwnersTable = () => {
   const { owners, removeOwner } = useAdminOwners();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Filter owners
+  // Filter owners based on search term in username or email
   const filteredOwners = owners.filter(owner =>
     owner.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
     owner.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Pagination
+  // Pagination calculations
   const totalPages = Math.ceil(filteredOwners.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentOwners = filteredOwners.slice(startIndex, startIndex + itemsPerPage);
@@ -47,6 +58,7 @@ const OwnersTable = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
+        {/* Owners table displaying filtered and paginated hotel managers with financial data */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
@@ -115,7 +127,7 @@ const OwnersTable = () => {
           </table>
         </div>
         
-        {/* Pagination */}
+        {/* Pagination controls */}
         {totalPages > 1 && (
           <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <p className="text-sm text-gray-500">
