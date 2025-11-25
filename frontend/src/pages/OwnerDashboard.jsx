@@ -1,3 +1,4 @@
+//imported required modules 
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
@@ -21,11 +22,11 @@ import {
 } from 'recharts';
 
 //owner dashboard
-
 const OwnerDashboard = () => {
     const navigate = useNavigate();
     const { user } = useSelector((state) => state.auth);
     const [properties, setProperties] = useState([]);
+    //bookings
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('properties');
@@ -35,7 +36,7 @@ const OwnerDashboard = () => {
     const [fromDate, setFromDate] = useState('');
     const [toDate, setToDate] = useState('');
     const [filteredRevenue, setFilteredRevenue] = useState(null);
-
+   //used useEffect for side tracks 
     useEffect(() => {
         // Check if user is logged in
         if (!user) {
