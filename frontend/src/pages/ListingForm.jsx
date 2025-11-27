@@ -32,6 +32,7 @@ const ListingForm = () => {
     const [licenseFile, setLicenseFile] = useState(null); // License File object
     const [imagePreviews, setImagePreviews] = useState([]); // Preview URLs
 
+    
     // Fetch data if in Edit Mode
     useEffect(() => {
         if (isEditMode) {
