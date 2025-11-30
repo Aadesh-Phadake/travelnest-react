@@ -62,15 +62,25 @@ module.exports.create = async (req, res, next) => {
         if (!req.body) {
             return res.status(400).json({ message: 'Send valid data.' });
         }
+        
+        console.log('Creating listing with data:', {
+            title: req.body.title,
+            hasHotelLicense: !!req.body.hotelLicense,
+            hotelLicense: req.body.hotelLicense ? 'Present' : 'Missing'
+        });
+        
         const listing = new Listing(req.body);
         listing.owner = req.user._id;
         await listing.save();
+        
+        console.log('Listing created successfully:', listing._id, 'License:', listing.hotelLicense ? 'Saved' : 'Not saved');
         
         res.status(201).json({ 
             message: 'Hotel listed successfully!', 
             listing 
         });
     } catch (e) {
+        console.error('Error creating listing:', e);
         res.status(500).json({ message: "Error creating listing", error: e.message });
     }
 };
@@ -138,6 +148,11 @@ module.exports.update = async (req, res, next) => {
     try {
         if (!req.body) return res.status(400).json({ message: 'Send valid data.' });
         
+        console.log('Updating listing:', req.params.id, {
+            hasHotelLicense: !!req.body.hotelLicense,
+            hotelLicense: req.body.hotelLicense ? 'Present' : 'Missing'
+        });
+        
         const updatedListing = await Listing.findByIdAndUpdate(
             req.params.id, 
             { ...req.body, lastUpdated: Date.now() },
@@ -146,11 +161,14 @@ module.exports.update = async (req, res, next) => {
         
         if (!updatedListing) return res.status(404).json({ message: "Listing not found" });
 
+        console.log('Listing updated successfully. License:', updatedListing.hotelLicense ? 'Saved' : 'Not saved');
+
         res.status(200).json({ 
             message: 'Hotel updated successfully!', 
             listing: updatedListing 
         });
     } catch (e) {
+        console.error('Error updating listing:', e);
         res.status(500).json({ message: "Error updating listing", error: e.message });
     }
 };

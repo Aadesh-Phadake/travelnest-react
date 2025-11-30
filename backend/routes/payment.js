@@ -11,6 +11,17 @@ router.get('/create/:propertyId', isLoggedIn, async (req, res, next) => {
         const propertyId = req.params.propertyId;
         const { checkIn, checkOut, guests } = req.query;
         
+        // Check room availability before creating order
+        const { checkRoomAvailability } = require('../utils/roomAllocation');
+        const availabilityCheck = await checkRoomAvailability(propertyId, guests);
+        
+        if (!availabilityCheck.available) {
+            return res.status(400).json({ 
+                success: false, 
+                message: availabilityCheck.message || 'Rooms not available for the selected number of guests.' 
+            });
+        }
+        
         // Check membership status
         const isMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
 
@@ -105,6 +116,17 @@ router.post('/verify', isLoggedIn, async (req, res, next) => {
             totalAmount: totalAmount.toFixed(2)
         };
 
+        // Check room availability before payment verification
+        const { checkRoomAvailability } = require('../utils/roomAllocation');
+        const availabilityCheck = await checkRoomAvailability(propertyId, guests);
+        
+        if (!availabilityCheck.available) {
+            return res.status(400).json({ 
+                success: false, 
+                message: availabilityCheck.message || 'Rooms not available for the selected number of guests.' 
+            });
+        }
+
         // Verify and Save
         const verificationResult = await paymentController.verifyPaymentWithFee(
             razorpay_order_id,
@@ -117,10 +139,14 @@ router.post('/verify', isLoggedIn, async (req, res, next) => {
             res.status(200).json({ 
                 success: true, 
                 message: 'Payment successful! Your booking has been confirmed.',
-                bookingId: verificationResult.booking._id 
+                bookingId: verificationResult.booking._id,
+                allocation: verificationResult.allocation
             });
         } else {
-            res.status(400).json({ success: false, message: 'Payment verification failed.' });
+            res.status(400).json({ 
+                success: false, 
+                message: verificationResult.message || 'Payment verification failed.' 
+            });
         }
     } catch (error) {
         console.error('Error verifying payment:', error);

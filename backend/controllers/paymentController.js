@@ -151,14 +151,31 @@ exports.verifyPaymentWithFee = async (razorpay_order_id, razorpay_payment_id, ra
             .digest("hex");
 
         if (razorpay_signature === expectedSign) {
-            // Payment successful, save booking
+            // Check room availability before booking
+            const { allocateRooms } = require('../utils/roomAllocation');
+            const allocationResult = await allocateRooms(bookingDetails.listing, bookingDetails.guests);
+            
+            if (!allocationResult.success) {
+                return {
+                    success: false,
+                    message: allocationResult.message || 'Rooms not available'
+                };
+            }
+
+            // Payment successful, save booking with room allocation
             const Booking = require('../models/booking');
-            const newBooking = new Booking(bookingDetails);
+            const newBooking = new Booking({
+                ...bookingDetails,
+                roomAllocation: allocationResult.allocation
+            });
             await newBooking.save();
+
+            console.log(`✅ Booking created: ${newBooking._id}. ${allocationResult.message}`);
 
             return {
                 success: true,
-                booking: newBooking
+                booking: newBooking,
+                allocation: allocationResult.allocation
             };
         } else {
             return { success: false };

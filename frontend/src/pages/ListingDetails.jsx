@@ -114,9 +114,38 @@ const ListingDetails = () => {
             {/* HEADER: Title & Location */}
             <div className="mb-6">
                 <h1 className="text-3xl font-bold text-gray-900">{listing.title}</h1>
-                <div className="flex items-center gap-2 text-gray-600 mt-2">
-                    <MapPin className="w-4 h-4" />
-                    <span className="font-medium">{listing.location}, {listing.country}</span>
+                <div className="flex items-center gap-4 text-gray-600 mt-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        <span className="font-medium">{listing.location}, {listing.country}</span>
+                    </div>
+                    {(listing.rooms || listing.roomTypes) && (
+                        <div className="flex items-center gap-2 text-gray-700 font-semibold flex-wrap">
+                            {listing.roomTypes ? (
+                                <>
+                                    {listing.roomTypes.single > 0 && (
+                                        <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                                            {listing.roomTypes.single} Single
+                                        </span>
+                                    )}
+                                    {listing.roomTypes.double > 0 && (
+                                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
+                                            {listing.roomTypes.double} Double
+                                        </span>
+                                    )}
+                                    {listing.roomTypes.triple > 0 && (
+                                        <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm">
+                                            {listing.roomTypes.triple} Triple
+                                        </span>
+                                    )}
+                                </>
+                            ) : listing.rooms ? (
+                                <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
+                                    {listing.rooms} {listing.rooms === 1 ? 'Room' : 'Rooms'} Available
+                                </span>
+                            ) : null}
+                        </div>
+                    )}
                 </div>
             </div>
 
