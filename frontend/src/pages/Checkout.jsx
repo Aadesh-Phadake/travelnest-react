@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { useAuth } from '../context/AuthContext';
+// import { useAuth } from '../context/AuthContext';
+import { useSelector } from 'react-redux';
 import toast from 'react-hot-toast';
 import { MapPin, Calendar, Users, ShieldCheck, Loader } from 'lucide-react';
 
@@ -9,7 +10,8 @@ const Checkout = () => {
     const { id } = useParams(); 
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    // const { user } = useAuth();
+    const { user } = useSelector((state) => state.auth);
 
     const [orderDetails, setOrderDetails] = useState(null);
     const [loading, setLoading] = useState(true);

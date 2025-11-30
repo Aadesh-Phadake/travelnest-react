@@ -324,10 +324,17 @@ const ListingForm = () => {
         try {
             setLoading(true);
             const currentImages = Array.isArray(formData.images) ? formData.images : [];
+            // Calculate total rooms
+            const calculatedTotalRooms = (parseInt(formData.roomTypes.single) || 0) + 
+                                         (parseInt(formData.roomTypes.double) || 0) + 
+                                         (parseInt(formData.roomTypes.triple) || 0);
+
             const submitData = {
                 ...formData,
                 images: currentImages.filter(url => url && url.trim() !== ""),
                 hotelLicense: formData.hotelLicense || null,
+                // FIX: Send the calculated number, not an empty string
+                rooms: calculatedTotalRooms, 
                 roomTypes: {
                     single: parseInt(formData.roomTypes.single) || 0,
                     double: parseInt(formData.roomTypes.double) || 0,
@@ -538,7 +545,7 @@ const ListingForm = () => {
 
                         {/* Image Upload Section */}
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                            <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                            <label className="block text-sm font-bold text-gray-700 mb-3  items-center gap-2">
                                 <ImageIcon className="w-4 h-4" />
                                 Property Images
                             </label>
@@ -599,7 +606,7 @@ const ListingForm = () => {
 
                         {/* Hotel License Document Upload */}
                         <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                            <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                            <label className="block text-sm font-bold text-gray-700 mb-3  items-center gap-2">
                                 <FileText className="w-4 h-4" />
                                 Hotel License Document
                             </label>

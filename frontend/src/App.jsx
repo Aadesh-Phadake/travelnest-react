@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './context/AuthContext'; // Import Context
+// REMOVED: import { AuthProvider } ... we don't need this anymore
 
 // Components
 import Navbar from './components/Navbar';
@@ -19,32 +19,31 @@ import ListingForm from './pages/ListingForm';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
+    // REMOVED: <AuthProvider> wrapper
+    <Router>
+      <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
+      
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <Navbar />
         
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-          <Navbar />
-          
-          <div className="flex-grow">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/listings" element={<Home />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/listings/:id" element={<ListingDetails />} />
-              <Route path="/payment/create/:id" element={<Checkout />} />
-              <Route path="/listings/:id/taxi" element={<TaxiBooking />} />
-              <Route path="/create-listing" element={<ListingForm />} />
-              <Route path="/edit-listing/:id" element={<ListingForm />} />
-            </Routes>
-          </div>
-          
-          <Footer />
+        <div className="flex-grow">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/listings" element={<Home />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/listings/:id" element={<ListingDetails />} />
+            <Route path="/payment/create/:id" element={<Checkout />} />
+            <Route path="/listings/:id/taxi" element={<TaxiBooking />} />
+            <Route path="/create-listing" element={<ListingForm />} />
+            <Route path="/edit-listing/:id" element={<ListingForm />} />
+          </Routes>
         </div>
-      </Router>
-    </AuthProvider>
+        
+        <Footer />
+      </div>
+    </Router>
   );
 }
 
