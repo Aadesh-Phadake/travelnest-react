@@ -30,6 +30,20 @@ const bookingSchema = new Schema({
         type: Number,
         required: true
     },
+    roomAllocation: {
+        single: {
+            type: Number,
+            default: 0
+        },
+        double: {
+            type: Number,
+            default: 0
+        },
+        triple: {
+            type: Number,
+            default: 0
+        }
+    },
     createdAt: {
         type: Date,
         default: Date.now

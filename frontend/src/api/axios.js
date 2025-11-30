@@ -24,4 +24,20 @@ const api = axios.create({
     // so your 'app.use(express.json())' in the backend can understand it.
 });
 
+// Request interceptor to handle file uploads
+api.interceptors.request.use((config) => {
+    // If data is FormData, remove Content-Type header to let browser set it
+    if (config.data instanceof FormData) {
+        // Remove Content-Type from all possible locations
+        if (config.headers) {
+            delete config.headers['Content-Type'];
+            delete config.headers.common?.['Content-Type'];
+            delete config.headers.post?.['Content-Type'];
+        }
+        // Ensure axios doesn't set it automatically
+        config.headers = config.headers || {};
+    }
+    return config;
+});
+
 export default api;

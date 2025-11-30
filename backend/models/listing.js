@@ -46,6 +46,32 @@ const ListingSchema = new schema({
     lastUpdated: {
         type: Date,
         default: Date.now
+    },
+    hotelLicense: {
+        type: String,
+        default: null
+    },
+    rooms: {
+        type: Number,
+        default: null,
+        min: 1
+    },
+    roomTypes: {
+        single: {
+            type: Number,
+            default: 0,
+            min: 0
+        },
+        double: {
+            type: Number,
+            default: 0,
+            min: 0
+        },
+        triple: {
+            type: Number,
+            default: 0,
+            min: 0
+        }
     }
 });
 

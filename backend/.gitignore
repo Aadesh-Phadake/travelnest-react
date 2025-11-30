@@ -111,3 +111,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Uploads directory (temporary files before Cloudinary upload)
+uploads/

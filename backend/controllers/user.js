@@ -178,6 +178,23 @@ module.exports.deleteBooking = async (req, res) => {
         if (!booking || !booking.user.equals(req.user._id)) {
              return res.status(403).json({ message: "Unauthorized" });
         }
+
+        // Restore rooms if room allocation exists
+        if (booking.roomAllocation && booking.listing) {
+            const listing = await Listing.findById(booking.listing);
+            if (listing && listing.roomTypes) {
+                listing.roomTypes.single = (listing.roomTypes.single || 0) + (booking.roomAllocation.single || 0);
+                listing.roomTypes.double = (listing.roomTypes.double || 0) + (booking.roomAllocation.double || 0);
+                listing.roomTypes.triple = (listing.roomTypes.triple || 0) + (booking.roomAllocation.triple || 0);
+                
+                // Update total rooms
+                listing.rooms = (listing.roomTypes.single || 0) + (listing.roomTypes.double || 0) + (listing.roomTypes.triple || 0);
+                
+                await listing.save();
+                console.log(`✅ Rooms restored for booking ${booking._id}`);
+            }
+        }
+
         await Booking.findByIdAndDelete(req.params.id);
         res.status(200).json({ message: "Booking cancelled successfully" });
     } catch(e) {
