@@ -374,7 +374,7 @@ const ListingForm = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto">
                 <button 
                     onClick={() => navigate(-1)} 
@@ -383,12 +383,12 @@ const ListingForm = () => {
                     <ArrowLeft className="w-4 h-4 mr-2" /> Back
                 </button>
 
-                <div className="bg-white shadow-xl rounded-2xl overflow-hidden">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
                     <div className="bg-primary/10 px-8 py-6 border-b border-primary/20">
-                        <h2 className="text-2xl font-bold text-gray-900">
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                             {isEditMode ? "Edit Listing" : "Create New Listing"}
                         </h2>
-                        <p className="text-gray-600 mt-1 text-sm">
+                        <p className="text-gray-600 dark:text-gray-300 mt-1 text-sm">
                             {isEditMode ? "Update your property details below." : "Fill in the details to list your property on TravelNest."}
                         </p>
                     </div>
@@ -397,13 +397,13 @@ const ListingForm = () => {
                         
                         {/* Title */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Listing Title</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Listing Title</label>
                             <input
                                 type="text"
                                 name="title"
                                 value={formData.title}
                                 onChange={handleChange}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+                                className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                                 placeholder="e.g. Cozy Cottage in the Hills"
                                 required
                             />
@@ -411,13 +411,13 @@ const ListingForm = () => {
 
                         {/* Description */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
                             <textarea
                                 name="description"
                                 value={formData.description}
                                 onChange={handleChange}
                                 rows="4"
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+                                className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                                 placeholder="Describe the property features, amenities, and surroundings..."
                                 required
                             />
@@ -426,26 +426,26 @@ const ListingForm = () => {
                         {/* Price & Country Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Price per Night (₹)</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price per Night (₹)</label>
                                 <input
                                     type="number"
                                     name="price"
                                     value={formData.price}
                                     onChange={handleChange}
                                     min="0"
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+                                    className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                                     placeholder="1500"
                                     required
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Country</label>
                                 <input
                                     type="text"
                                     name="country"
                                     value={formData.country}
                                     onChange={handleChange}
-                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+                                    className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                                     placeholder="e.g. India"
                                     required
                                 />
@@ -454,24 +454,24 @@ const ListingForm = () => {
 
                         {/* Location */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Location (City/State)</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location (City/State)</label>
                             <input
                                 type="text"
                                 name="location"
                                 value={formData.location}
                                 onChange={handleChange}
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+                                className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                                 placeholder="e.g. Jaipur, Rajasthan"
                                 required
                             />
                         </div>
 
                         {/* Room Types */}
-                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                            <label className="block text-sm font-bold text-gray-700 mb-3">Room Types Available</label>
+                        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-3">Room Types Available</label>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Single Stay Rooms (1 person)</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Single Stay Rooms (1 person)</label>
                                     <input
                                         type="number"
                                         name="roomTypes.single"
@@ -486,13 +486,13 @@ const ListingForm = () => {
                                             });
                                         }}
                                         min="0"
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+                                        className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                                         placeholder="e.g. 30"
                                         required
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Double Stay Rooms (2 people)</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Double Stay Rooms (2 people)</label>
                                     <input
                                         type="number"
                                         name="roomTypes.double"
@@ -507,13 +507,13 @@ const ListingForm = () => {
                                             });
                                         }}
                                         min="0"
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+                                        className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                                         placeholder="e.g. 50"
                                         required
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Triple Stay Rooms (3 people)</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Triple Stay Rooms (3 people)</label>
                                     <input
                                         type="number"
                                         name="roomTypes.triple"
@@ -528,7 +528,7 @@ const ListingForm = () => {
                                             });
                                         }}
                                         min="0"
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+                                        className="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                                         placeholder="e.g. 20"
                                         required
                                     />
@@ -544,8 +544,8 @@ const ListingForm = () => {
                         </div>
 
                         {/* Image Upload Section */}
-                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                            <label className="block text-sm font-bold text-gray-700 mb-3  items-center gap-2">
+                        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-3  items-center gap-2">
                                 <ImageIcon className="w-4 h-4" />
                                 Property Images
                             </label>
@@ -565,11 +565,11 @@ const ListingForm = () => {
                                     />
                                     <label 
                                         htmlFor="image-upload"
-                                        className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary transition"
+                                        className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-500 rounded-lg cursor-pointer hover:border-primary transition"
                                     >
                                         <div className="flex flex-col items-center justify-center">
                                             <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                                            <span className="text-sm text-gray-600">Click to upload images</span>
+                                            <span className="text-sm text-gray-600 dark:text-gray-300">Click to upload images</span>
                                             <span className="text-xs text-gray-400 mt-1">PNG, JPG up to 10MB each</span>
                                         </div>
                                     </label>
@@ -584,7 +584,7 @@ const ListingForm = () => {
                                             <img
                                                 src={imagePreviews[index] || url}
                                                 alt={`Preview ${index + 1}`}
-                                                className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                                                className="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
                                             />
                                             <button
                                                 type="button"
@@ -605,17 +605,17 @@ const ListingForm = () => {
                         </div>
 
                         {/* Hotel License Document Upload */}
-                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                            <label className="block text-sm font-bold text-gray-700 mb-3  items-center gap-2">
+                        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-200 mb-3  items-center gap-2">
                                 <FileText className="w-4 h-4" />
                                 Hotel License Document
                             </label>
                             
                             {formData.hotelLicense ? (
-                                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                                <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
                                     <div className="flex items-center gap-2">
                                         <FileText className="w-5 h-5 text-green-600" />
-                                        <span className="text-sm text-gray-700">License document uploaded</span>
+                                        <span className="text-sm text-gray-700 dark:text-gray-300">License document uploaded</span>
                                     </div>
                                     <a
                                         href={formData.hotelLicense}
@@ -638,11 +638,11 @@ const ListingForm = () => {
                                     />
                                     <label 
                                         htmlFor="license-upload"
-                                        className="flex items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary transition"
+                                        className="flex items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 dark:border-gray-500 rounded-lg cursor-pointer hover:border-primary transition"
                                     >
                                         <div className="flex flex-col items-center justify-center">
                                             <Upload className="w-6 h-6 text-gray-400 mb-1" />
-                                            <span className="text-sm text-gray-600">Upload License Document</span>
+                                            <span className="text-sm text-gray-600 dark:text-gray-300">Upload License Document</span>
                                             <span className="text-xs text-gray-400 mt-1">PDF, JPG, PNG up to 10MB</span>
                                         </div>
                                     </label>

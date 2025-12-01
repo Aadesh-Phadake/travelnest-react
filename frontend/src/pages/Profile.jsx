@@ -54,19 +54,19 @@ const Profile = () => {
     const isMember = user.isMember && new Date(user.membershipExpiresAt) > new Date();
 
     return (
-        <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6">
             <div className="max-w-5xl mx-auto">
                 
                 {/* --- 1. Profile Header Card --- */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8 mb-8 flex flex-col md:flex-row items-center md:items-start gap-6">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 md:p-8 mb-8 flex flex-col md:flex-row items-center md:items-start gap-6">
                     {/* Avatar Placeholder */}
                     <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center text-primary text-3xl font-bold border-4 border-white shadow-sm">
                         {user.username.charAt(0).toUpperCase()}
                     </div>
                     
                     <div className="flex-1 text-center md:text-left space-y-1">
-                        <h1 className="text-2xl font-bold text-gray-900">{user.username}</h1>
-                        <p className="text-gray-500">{user.email}</p>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-300">{user.username}</h1>
+                        <p className="text-gray-500 dark:text-gray-400">{user.email}</p>
                         
                         <div className="pt-2 flex flex-wrap justify-center md:justify-start gap-3">
                             {isMember ? (
@@ -87,7 +87,7 @@ const Profile = () => {
                 </div>
 
                 {/* --- 2. Tabs Navigation --- */}
-                <div className="flex border-b border-gray-200 mb-8">
+                <div className="flex border-b border-gray-200 dark:border-gray-700 mb-8">
                     <button 
                         onClick={() => setActiveTab('hotels')}
                         className={`pb-4 px-6 text-sm font-medium transition-all relative ${
@@ -115,7 +115,7 @@ const Profile = () => {
                     <div className="space-y-6">
                         {bookings.length > 0 ? (
                             bookings.map(booking => (
-                                <div key={booking._id} className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-300">
+                                <div key={booking._id} className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-all duration-300">
                                     <div className="flex flex-col md:flex-row">
                                         
                                         {/* Image Section */}
