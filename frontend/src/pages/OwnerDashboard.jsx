@@ -20,6 +20,8 @@ import {
     ResponsiveContainer
 } from 'recharts';
 
+//owner dashboard
+
 const OwnerDashboard = () => {
     const navigate = useNavigate();
     const { user } = useSelector((state) => state.auth);
@@ -57,7 +59,7 @@ const OwnerDashboard = () => {
 
         fetchDashboardData();
     }, [user, navigate]);
-
+    //fetching the dashboard data 
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
