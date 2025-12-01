@@ -16,6 +16,7 @@ import ListingDetails from './pages/ListingDetails';
 import Checkout from './pages/Checkout';
 import TaxiBooking from './pages/TaxiBooking';
 import ListingForm from './pages/ListingForm';
+import OwnerDashboard from './pages/OwnerDashboard';
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
             <Route path="/listings/:id/taxi" element={<TaxiBooking />} />
             <Route path="/create-listing" element={<ListingForm />} />
             <Route path="/edit-listing/:id" element={<ListingForm />} />
+            <Route path="/owner-dashboard" element={<OwnerDashboard />} />
           </Routes>
         </div>
         
