@@ -23,6 +23,10 @@ router.get('/api/hotels', isLoggedIn, requireManager, wrapAsync(async (req, res)
             const totalRevenue = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
             const recentBookings = bookings.slice(0, 5); // Last 5 bookings
             
+            // Calculate total rooms from roomTypes if rooms field is not set
+            const calculatedRooms = hotel.rooms || 
+                ((hotel.roomTypes?.single || 0) + (hotel.roomTypes?.double || 0) + (hotel.roomTypes?.triple || 0));
+            
             return {
                 _id: hotel._id,
                 title: hotel.title,
@@ -30,7 +34,10 @@ router.get('/api/hotels', isLoggedIn, requireManager, wrapAsync(async (req, res)
                 country: hotel.country,
                 price: hotel.price,
                 images: hotel.images,
+                rooms: calculatedRooms,
+                roomTypes: hotel.roomTypes,
                 createdAt: hotel.createdAt,
+                lastUpdated: hotel.lastUpdated,
                 totalBookings,
                 totalRevenue,
                 recentBookings
