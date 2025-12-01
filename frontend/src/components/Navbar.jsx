@@ -54,7 +54,7 @@ const Navbar = () => {
                                     <Link to="/profile" className="text-gray-600 hover:text-primary font-medium transition">My Profile</Link>
                                 )}
                                 {user.role === 'manager' && (
-                                    <Link to="/manager/dashboard" className="text-gray-600 hover:text-primary font-medium transition">Dashboard</Link>
+                                    <Link to="/owner-dashboard" className="text-gray-600 hover:text-primary font-medium transition">Dashboard</Link>
                                 )}
                                 {(user.role === 'admin' || user.username === 'TravelNest') && (
                                     <Link to="/admin" className="text-primary font-bold hover:underline transition">Admin Panel</Link>
