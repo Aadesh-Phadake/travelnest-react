@@ -243,11 +243,11 @@ const TaxiBooking = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
                 
                 {/* LEFT: Form Section (4 Columns) */}
-                <div className="lg:col-span-4 flex flex-col h-full bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+                <div className="lg:col-span-4 flex flex-col h-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
                     
-                    <div className="p-5 border-b bg-white z-10">
-                        <h2 className="text-2xl font-bold text-gray-800">Book a Ride</h2>
-                        <p className="text-sm text-gray-500 truncate">To/From: {listing ? listing.title : 'Loading...'}</p>
+                    <div className="p-5 border-b bg-white dark:bg-gray-800 z-10">
+                        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-300">Book a Ride</h2>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">To/From: {listing ? listing.title : 'Loading...'}</p>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-5 space-y-6">
@@ -341,7 +341,7 @@ const TaxiBooking = () => {
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="p-5 border-t bg-white">
+                    <div className="p-5 border-t bg-white dark:bg-gray-800">
                         {!estimate ? (
                             <button 
                                 onClick={handleGetEstimate}

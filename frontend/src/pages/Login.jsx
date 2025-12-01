@@ -38,22 +38,22 @@ const Login = () => {
 
     return (
         <div className="flex justify-center items-center min-h-[80vh]">
-            <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-                <h1 className="text-2xl font-bold mb-6 text-center">Login to TravelNest</h1>
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-md">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-300">Login to TravelNest</h1>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Username</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Username</label>
                         <input 
                             type="text" name="username" onChange={handleChange} 
-                            className="mt-1 block w-full p-2 border rounded-md focus:ring-primary focus:border-primary"
+                            className="mt-1 block w-full p-2 border rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                             required
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Password</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
                         <input 
                             type="password" name="password" onChange={handleChange} 
-                            className="mt-1 block w-full p-2 border rounded-md focus:ring-primary focus:border-primary"
+                            className="mt-1 block w-full p-2 border rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                             required
                         />
                     </div>

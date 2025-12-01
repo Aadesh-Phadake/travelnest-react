@@ -10,7 +10,7 @@ const ListingCard = ({ listing }) => {
 
   return (
     <Link to={`/listings/${listing._id}`} className="group block h-full">
-      <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 h-full flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 dark:border-gray-700 h-full flex flex-col">
         
         {/* Image */}
         <div className="relative aspect-[4/3] overflow-hidden">
@@ -28,7 +28,7 @@ const ListingCard = ({ listing }) => {
         {/* Content */}
         <div className="p-4 flex flex-col flex-grow">
           <div className="flex justify-between items-start mb-2">
-            <h3 className="font-bold text-lg text-gray-900 group-hover:text-primary transition line-clamp-1">
+            <h3 className="font-bold text-lg text-gray-900 dark:text-gray-300 group-hover:text-primary transition line-clamp-1">
               {listing.title}
             </h3>
             {avgRating && (
@@ -39,13 +39,13 @@ const ListingCard = ({ listing }) => {
             )}
           </div>
 
-          <p className="text-gray-500 text-sm mb-2 flex items-center gap-1 line-clamp-1">
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-2 flex items-center gap-1 line-clamp-1">
             <MapPin className="w-3.5 h-3.5" /> {listing.location}, {listing.country}
           </p>
 
-          <div className="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
+          <div className="mt-auto pt-3 border-t border-gray-50 dark:border-gray-700 flex items-center justify-between">
             <div>
-                <span className="font-bold text-lg text-gray-900">
+                <span className="font-bold text-lg text-gray-900 dark:text-gray-300">
                 ₹{listing.price?.toLocaleString("en-IN")}
                 </span>
                 <span className="text-gray-400 text-xs ml-1 font-normal">/ night</span>

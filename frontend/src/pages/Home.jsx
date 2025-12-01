@@ -49,10 +49,10 @@ const Home = () => {
     };
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="container mx-auto px-4 py-8 max-w-7xl bg-white dark:bg-gray-900">
             
             {/* --- Filter & Search Section --- */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-8 top-20 z-40">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-8 top-20 z-40">
                 <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 items-center">
                     
                     {/* Search Input */}
@@ -60,7 +60,7 @@ const Home = () => {
                         <input 
                             type="text" 
                             placeholder="Search by name or location..." 
-                            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -70,7 +70,7 @@ const Home = () => {
                     {/* Price Filter */}
                     <div className="w-full md:w-48">
                         <select 
-                            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 bg-white"
+                            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                             value={priceFilter}
                             onChange={(e) => setPriceFilter(e.target.value)}
                         >
@@ -85,7 +85,7 @@ const Home = () => {
                     {/* Rating Filter */}
                     <div className="w-full md:w-48">
                         <select 
-                            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 bg-white"
+                            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                             value={ratingFilter}
                             onChange={(e) => setRatingFilter(e.target.value)}
                         >
@@ -125,7 +125,7 @@ const Home = () => {
 
             {/* --- Results Section --- */}
             {loading ? (
-                <div className="min-h-[50vh] flex flex-col items-center justify-center">
+                <div className="min-h-[50vh] flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
                     <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                     <p className="mt-4 text-gray-500">Finding best places...</p>
                 </div>
@@ -144,7 +144,7 @@ const Home = () => {
                     </div>
                 </>
             ) : (
-                <div className="text-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                <div className="text-center py-20 bg-gray-50 dark:bg-gray-900 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
                     <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-gray-700">No matches found</h3>
                     <p className="text-gray-500 mt-2">Try adjusting your filters or search term.</p>

@@ -16,12 +16,10 @@ const ListingDetails = () => {
     const [reviewComment, setReviewComment] = useState('');
     const [reviewRating, setReviewRating] = useState(5);
     
-    // Booking State
     const [checkIn, setCheckIn] = useState('');
     const [checkOut, setCheckOut] = useState('');
     const [guests, setGuests] = useState(1);
 
-    // Fetch Listing Data
     useEffect(() => {
         const fetchListing = async () => {
             try {
@@ -91,6 +89,12 @@ const ListingDetails = () => {
         }
     };
 
+    // Helper to extract image URL safely (handles Strings vs Objects)
+    const getImgUrl = (imgObj) => {
+        if (!imgObj) return "https://via.placeholder.com/800?text=No+Image";
+        return typeof imgObj === 'string' ? imgObj : imgObj.url;
+    };
+
     if (loading) return <div className="flex justify-center items-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
     if (!listing) return <div className="text-center mt-10">Listing not found</div>;
 
@@ -98,21 +102,43 @@ const ListingDetails = () => {
     const pricePerNight = listing.price;
     const totalPrice = Math.round(pricePerNight * 1.05); 
 
-
     return (
         <div className="container mx-auto px-4 py-8 max-w-7xl">
             
             {/* Header */}
             <div className="mb-8 flex flex-col md:flex-row justify-between items-start gap-6">
                 <div className="flex-1">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-3">{listing.title}</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-3 dark:text-gray-300">{listing.title}</h1>
+                    
                     <div className="flex flex-wrap items-center gap-4 text-gray-600">
                         <div className="flex items-center gap-1.5 bg-gray-100 px-3 py-1.5 rounded-lg text-sm font-medium">
                             <MapPin className="w-4 h-4 text-primary" />
                             <span>{listing.location}, {listing.country}</span>
                         </div>
+
+                        {/* Room Tags */}
+                        {(listing.roomTypes) && (
+                            <div className="flex items-center gap-2">
+                                {listing.roomTypes.single > 0 && (
+                                    <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase">
+                                        {listing.roomTypes.single} Single
+                                    </span>
+                                )}
+                                {listing.roomTypes.double > 0 && (
+                                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase">
+                                        {listing.roomTypes.double} Double
+                                    </span>
+                                )}
+                                {listing.roomTypes.triple > 0 && (
+                                    <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-bold uppercase">
+                                        {listing.roomTypes.triple} Triple
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
+
                 <div className="flex-shrink-0 w-full md:w-auto">
                     <div className="md:-mt-4">
                         <WeatherWidget location={listing.location} country={listing.country} />
@@ -120,23 +146,28 @@ const ListingDetails = () => {
                 </div>
             </div>
 
-            {/* IMAGES SECTION */}
+            {/* --- RESTORED IMAGE GRID --- */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-2xl overflow-hidden h-[400px] md:h-[500px] mb-10 shadow-md">
-                <div className="h-full">
+                {/* Main Large Image (Index 0) */}
+                <div className="h-full relative group">
                     <img 
-                        src={listing.images?.[0]?.url || listing.images?.[0] || "https://via.placeholder.com/800"} 
-                        className="w-full h-full object-cover hover:opacity-95 transition cursor-pointer"
+                        src={getImgUrl(listing.images?.[0])}
+                        className="w-full h-full object-cover hover:brightness-95 transition cursor-pointer"
                         alt="Main View"
                     />
                 </div>
+
+                {/* Side Grid (Index 1-4) */}
                 <div className="hidden md:grid grid-cols-2 gap-2 h-full">
                     {[1, 2, 3, 4].map((idx) => (
-                        <img 
-                            key={idx}
-                            src={listing.images?.[idx]?.url || listing.images?.[idx] || "https://via.placeholder.com/400?text=View"} 
-                            className="w-full h-full object-cover hover:opacity-95 transition" 
-                            alt={`View ${idx}`} 
-                        />
+                        <div key={idx} className="relative overflow-hidden group">
+                            <img 
+                                src={getImgUrl(listing.images?.[idx])}
+                                className="w-full h-full object-cover hover:scale-105 transition duration-500 cursor-pointer" 
+                                alt={`View ${idx}`} 
+                                onError={(e) => { e.target.src = "https://via.placeholder.com/400?text=More+Photos"; }}
+                            />
+                        </div>
                     ))}
                 </div>
             </div>
@@ -147,8 +178,8 @@ const ListingDetails = () => {
                 <div className="lg:col-span-2 space-y-10">
                     <div className="flex justify-between items-center border-b border-gray-100 pb-8">
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900">Hosted by {listing.owner?.username || "TravelNest Host"}</h2>
-                            <p className="text-gray-500 mt-1">Superhost · 5 years hosting</p>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-300">Hosted by {listing.owner?.username || "TravelNest Host"}</h2>
+                            <p className="text-gray-500 mt-1 dark:text-gray-300">Superhost · 5 years hosting</p>
                         </div>
                         <div className="h-14 w-14 bg-gray-100 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
                             <User className="h-7 w-7 text-gray-500" />
@@ -156,8 +187,8 @@ const ListingDetails = () => {
                     </div>
 
                     <div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-4">About this place</h3>
-                        <p className="text-gray-600 leading-relaxed whitespace-pre-line text-lg">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-300 mb-4">About this place</h3>
+                        <p className="text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line text-lg">
                             {listing.description}
                         </p>
                     </div>
@@ -272,11 +303,11 @@ const ListingDetails = () => {
 
                 {/* Right Column: Sticky Booking Card */}
                 <div className="lg:col-span-1">
-                    <div className="sticky top-24 bg-white border border-gray-200 rounded-2xl shadow-xl p-6 lg:p-8">
+                    <div className="sticky top-24 bg-white border border-gray-200 dark:bg-gray-700 rounded-2xl shadow-xl p-6 lg:p-8">
                         <div className="flex justify-between items-end mb-6">
                             <div>
-                                <span className="text-3xl font-bold text-gray-900">₹{totalPrice.toLocaleString("en-IN")}</span>
-                                <span className="text-gray-500 font-medium"> / night</span>
+                                <span className="text-3xl font-bold text-gray-900 dark:text-gray-200">₹{totalPrice.toLocaleString("en-IN")}</span>
+                                <span className="text-gray-500 dark:text-gray-300 font-medium"> / night</span>
                             </div>
                         </div>
 
