@@ -1,34 +1,34 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-// REMOVED: import { AuthProvider } ... we don't need this anymore
+import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 
 // Components
-import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import Navbar from './components/Navbar';
 
 // Pages
-import Signup from './pages/Signup';
-import Login from './pages/Login';
-import Profile from './pages/Profile';
+import About from './pages/About';
+import AdminDashboard from './pages/AdminDashboard';
+import Checkout from './pages/Checkout';
+import Contact from './pages/Contact';
+import FAQ from './pages/FAQ';
+import HelpCenter from './pages/HelpCenter';
 import Home from './pages/Home';
 import ListingDetails from './pages/ListingDetails';
-import Checkout from './pages/Checkout';
-import TaxiBooking from './pages/TaxiBooking';
 import ListingForm from './pages/ListingForm';
+import Login from './pages/Login';
 import OwnerDashboard from './pages/OwnerDashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import About from './pages/About';
-import Contact from './pages/Contact';
-import HelpCenter from './pages/HelpCenter';
-import FAQ from './pages/FAQ';
-import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
+import Profile from './pages/Profile';
+import ProfileSettings from './pages/ProfileSettings';
+import Signup from './pages/Signup';
+import TaxiBooking from './pages/TaxiBooking';
+import Terms from './pages/Terms';
 
 function App() {
   return (
-    // REMOVED: <AuthProvider> wrapper
-    <Router>
+    <AuthProvider>
+      <Router>
       <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
       
       <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -41,6 +41,7 @@ function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/login" element={<Login />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/settings" element={<ProfileSettings />} />
             <Route path="/listings/:id" element={<ListingDetails />} />
             <Route path="/payment/create/:id" element={<Checkout />} />
             <Route path="/listings/:id/taxi" element={<TaxiBooking />} />
@@ -58,10 +59,11 @@ function App() {
             <Route path="/privacy" element={<Privacy />} />
           </Routes>
         </div>
-        
+
         <Footer />
       </div>
     </Router>
+    </AuthProvider>
   );
 }
 

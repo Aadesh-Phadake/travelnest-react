@@ -13,6 +13,43 @@ const userSchema = new schema({
         enum: ['traveller', 'manager', 'admin'],
         default: 'traveller'
     },
+    // Profile fields
+    name: {
+        type: String,
+        default: ''
+    },
+    phone: {
+        type: String,
+        default: ''
+    },
+    address: {
+        type: String,
+        default: ''
+    },
+    travelPreferences: {
+        type: String,
+        default: ''
+    },
+    profilePhoto: {
+        type: String,
+        default: ''
+    },
+    // Manager-specific fields
+    hotelName: {
+        type: String,
+        default: ''
+    },
+    hotelAddress: {
+        type: String,
+        default: ''
+    },
+    documents: [{
+        type: String // URLs to uploaded documents
+    }],
+    // Admin-specific fields
+    systemAccess: [{
+        type: String
+    }],
     // Manager approval fields
     isApproved: {
         type: Boolean,
@@ -44,6 +81,17 @@ const userSchema = new schema({
     freeCancellationsResetAt: {
         type: Date,
         default: null
+    },
+    // Wallet and rewards
+    walletBalance: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    rewardPoints: {
+        type: Number,
+        default: 0,
+        min: 0
     }
 }, {
     timestamps: true  // This will automatically add createdAt and updatedAt fields

@@ -66,7 +66,7 @@ exports.verifyPayment = async (req, res) => {
 
 // Create order for listing with optional fee waiver
 // This is a Helper Function (returns data, doesn't handle res)
-exports.createOrderForListing = async (propertyId, isMember, checkIn, checkOut, guests) => {
+exports.createOrderForListing = async (propertyId, isMember, checkIn, checkOut, guests, userId) => {
     try {
         const property = await Listing.findById(propertyId);
 
@@ -140,9 +140,9 @@ exports.createOrderForListing = async (propertyId, isMember, checkIn, checkOut, 
     }
 };
 
-// Verify payment with 5% admin fee
+// Verify payment with 5% admin fee and optional wallet deduction
 // This is a Helper Function
-exports.verifyPaymentWithFee = async (razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingDetails) => {
+exports.verifyPaymentWithFee = async (razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingDetails, walletDeduction = 0) => {
     try {
         const sign = `${razorpay_order_id}|${razorpay_payment_id}`;
         const expectedSign = crypto
@@ -150,39 +150,102 @@ exports.verifyPaymentWithFee = async (razorpay_order_id, razorpay_payment_id, ra
             .update(sign.toString())
             .digest("hex");
 
-        if (razorpay_signature === expectedSign) {
-            // Check room availability before booking
-            const { allocateRooms } = require('../utils/roomAllocation');
-            const allocationResult = await allocateRooms(bookingDetails.listing, bookingDetails.guests);
-            
-            if (!allocationResult.success) {
+        if (razorpay_signature !== expectedSign) {
+            return { success: false, message: 'Payment verification failed' };
+        }
+
+        // Check room availability before booking
+        const { allocateRooms } = require('../utils/roomAllocation');
+        const allocationResult = await allocateRooms(bookingDetails.listing, bookingDetails.guests);
+
+        if (!allocationResult.success) {
+            return {
+                success: false,
+                message: allocationResult.message || 'Rooms not available'
+            };
+        }
+
+        // Payment successful, save booking with room allocation and payment ID
+        const Booking = require('../models/booking');
+        const User = require('../models/user');
+        const Transaction = require('../models/transaction');
+
+        const newBooking = new Booking({
+            ...bookingDetails,
+            roomAllocation: allocationResult.allocation,
+            paymentId: razorpay_payment_id,   // Store payment ID for refunds
+            walletDeduction: walletDeduction, // Store wallet deduction, if any
+            status: 'confirmed',
+            paymentStatus: 'paid'
+        });
+        await newBooking.save();
+
+        console.log(`✅ Booking created: ${newBooking._id}. Payment ID: ${razorpay_payment_id}. ${allocationResult.message}`);
+
+        // Handle wallet deduction after booking creation
+        if (walletDeduction > 0) {
+            const user = await User.findById(bookingDetails.user);
+            if (!user) {
+                // If user not found, delete the booking to rollback
+                await Booking.findByIdAndDelete(newBooking._id);
                 return {
                     success: false,
-                    message: allocationResult.message || 'Rooms not available'
+                    message: 'User not found'
                 };
             }
 
-            // Payment successful, save booking with room allocation and payment ID
-            const Booking = require('../models/booking');
-            const newBooking = new Booking({
-                ...bookingDetails,
-                roomAllocation: allocationResult.allocation,
-                paymentId: razorpay_payment_id,  // Store payment ID for refunds
-                status: 'confirmed',
-                paymentStatus: 'paid'
+            if (user.walletBalance < walletDeduction) {
+                // If insufficient balance, delete the booking to rollback
+                await Booking.findByIdAndDelete(newBooking._id);
+                return {
+                    success: false,
+                    message: 'Insufficient wallet balance'
+                };
+            }
+
+            // Deduct from wallet balance
+            console.log(`Wallet deduction: User ${user._id} balance before: ₹${user.walletBalance}, deducting: ₹${walletDeduction}`);
+            user.walletBalance -= walletDeduction;
+            await user.save();
+            console.log(`Wallet deduction: User ${user._id} balance after: ₹${user.walletBalance}`);
+
+            // Create transaction record for wallet deduction
+            const walletTransaction = new Transaction({
+                user: bookingDetails.user,
+                type: 'spend',
+                amount: walletDeduction,
+                description: `Paid ₹${walletDeduction} for hotel booking using wallet`
             });
-            await newBooking.save();
-
-            console.log(`✅ Booking created: ${newBooking._id}. Payment ID: ${razorpay_payment_id}. ${allocationResult.message}`);
-
-            return {
-                success: true,
-                booking: newBooking,
-                allocation: allocationResult.allocation
-            };
-        } else {
-            return { success: false };
+            await walletTransaction.save();
         }
+
+        // Award reward points to the user (10 points per ₹100 spent)
+        let pointsEarned = Math.floor(bookingDetails.totalAmount / 100) * 10;
+        if (pointsEarned > 0) {
+            const user = await User.findById(bookingDetails.user);
+            if (user) {
+                user.rewardPoints += pointsEarned;
+                await user.save();
+
+                // Create transaction record for earned points
+                const transaction = new Transaction({
+                    user: bookingDetails.user,
+                    type: 'earn',
+                    amount: pointsEarned,
+                    description: `Earned ${pointsEarned} points for hotel booking (₹${bookingDetails.totalAmount})`
+                });
+                await transaction.save();
+
+                console.log(`🎉 Awarded ${pointsEarned} reward points to user ${user._id}`);
+            }
+        }
+
+        return {
+            success: true,
+            booking: newBooking,
+            allocation: allocationResult.allocation,
+            pointsEarned: pointsEarned || 0
+        };
     } catch (error) {
         console.error('Error verifying payment with fee:', error);
         throw error;
