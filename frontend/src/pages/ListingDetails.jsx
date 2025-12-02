@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import api from '../api/axios';
-import { useSelector } from 'react-redux'; 
-import { MapPin, Star, User, Trash2, Edit } from 'lucide-react';
+import { Edit, MapPin, Star, Trash2, User } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useSelector } from 'react-redux';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import api from '../api/axios';
 import WeatherWidget from '../components/WeatherWidget';
 
 const ListingDetails = () => {
@@ -15,7 +15,11 @@ const ListingDetails = () => {
     const [loading, setLoading] = useState(true);
     const [reviewComment, setReviewComment] = useState('');
     const [reviewRating, setReviewRating] = useState(5);
-    
+    const [reviewPhotos, setReviewPhotos] = useState([]);
+    const [hasBooked, setHasBooked] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+    const [selectedImage, setSelectedImage] = useState('');
+
     const [checkIn, setCheckIn] = useState('');
     const [checkOut, setCheckOut] = useState('');
     const [guests, setGuests] = useState(1);
@@ -33,8 +37,22 @@ const ListingDetails = () => {
                 setLoading(false);
             }
         };
+
+        const checkBooking = async () => {
+            if (user) {
+                try {
+                    const res = await api.get(`/bookings/check/${id}`);
+                    setHasBooked(res.data.hasBooked);
+                } catch (error) {
+                    console.error('Error checking booking:', error);
+                    setHasBooked(false);
+                }
+            }
+        };
+
         fetchListing();
-    }, [id, navigate]);
+        checkBooking();
+    }, [id, navigate, user]);
 
     const handleBookNow = (e) => {
         e.preventDefault();
@@ -47,17 +65,29 @@ const ListingDetails = () => {
 
     const handleSubmitReview = async (e) => {
         e.preventDefault();
+
+        const formData = new FormData();
+        formData.append('rating', reviewRating);
+        formData.append('comment', reviewComment);
+
+        // Add photos to form data
+        reviewPhotos.forEach((photo, index) => {
+            formData.append('photos', photo);
+        });
+
         try {
-            const res = await api.post(`/listings/${id}/reviews`, { 
-                rating: reviewRating, 
-                comment: reviewComment 
+            const res = await api.post(`/listings/${id}/reviews`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
             setListing(prev => ({
                 ...prev,
-                reviews: [...prev.reviews, res.data.review] 
+                reviews: [...prev.reviews, res.data.review]
             }));
             setReviewComment('');
             setReviewRating(5);
+            setReviewPhotos([]);
             toast.success("Review added!");
         } catch (error) {
             toast.error(error.response?.data?.message || "Failed to post review");
@@ -93,6 +123,16 @@ const ListingDetails = () => {
     const getImgUrl = (imgObj) => {
         if (!imgObj) return "https://via.placeholder.com/800?text=No+Image";
         return typeof imgObj === 'string' ? imgObj : imgObj.url;
+    };
+
+    const openModal = (imageUrl) => {
+        setSelectedImage(imageUrl);
+        setShowModal(true);
+    };
+
+    const closeModal = () => {
+        setShowModal(false);
+        setSelectedImage('');
     };
 
     if (loading) return <div className="flex justify-center items-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
@@ -154,6 +194,7 @@ const ListingDetails = () => {
                         src={getImgUrl(listing.images?.[0])}
                         className="w-full h-full object-cover hover:brightness-95 transition cursor-pointer"
                         alt="Main View"
+                        onClick={() => openModal(getImgUrl(listing.images?.[0]))}
                     />
                 </div>
 
@@ -166,6 +207,7 @@ const ListingDetails = () => {
                                 className="w-full h-full object-cover hover:scale-105 transition duration-500 cursor-pointer" 
                                 alt={`View ${idx}`} 
                                 onError={(e) => { e.target.src = "https://via.placeholder.com/400?text=More+Photos"; }}
+                                onClick={() => openModal(getImgUrl(listing.images?.[idx]))}
                             />
                         </div>
                     ))}
@@ -194,8 +236,8 @@ const ListingDetails = () => {
                     </div>
 
                     {isOwner && (
-                        <div className="flex gap-4 p-6 bg-gray-50 rounded-xl border border-gray-100">
-                            <button onClick={() => navigate(`/edit-listing/${id}`)} className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-black transition font-medium">
+                        <div className="flex gap-4  bg-gray-900 rounded-xl ">
+                            <button onClick={() => navigate(`/edit-listing/${id}`)} className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-yellow-800 transition font-medium">
                                 <Edit className="w-4 h-4" /> Edit Listing
                             </button>
                             <button onClick={handleDeleteListing} className="flex items-center gap-2 px-5 py-2.5 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition font-medium">
@@ -225,7 +267,7 @@ const ListingDetails = () => {
                     <div className="border-t border-gray-100 pt-10">
                         <div className="flex items-center gap-3 mb-8">
                             <Star className="w-7 h-7 fill-primary text-primary" />
-                            <h3 className="text-2xl font-bold text-gray-900">
+                            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-300">
                                 {listing.reviews?.length > 0 
                                     ? `${(listing.reviews.reduce((acc, r) => acc + r.rating, 0) / listing.reviews.length).toFixed(1)} · ${listing.reviews.length} Reviews` 
                                     : "No reviews yet"}
@@ -234,7 +276,7 @@ const ListingDetails = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
                             {listing.reviews?.map(review => (
-                                <div key={review._id} className="bg-gray-50 p-6 rounded-2xl">
+                                <div key={review._id} className="bg-gray-50 border p-6 rounded-2xl">
                                     <div className="flex justify-between items-start mb-3">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center font-bold text-gray-500 shadow-sm">
@@ -257,12 +299,25 @@ const ListingDetails = () => {
                                         ))}
                                     </div>
                                     <p className="text-gray-700 leading-relaxed">{review.comment}</p>
+                                    {review.photos && review.photos.length > 0 && (
+                                        <div className="mt-4 grid grid-cols-2 gap-2">
+                                            {review.photos.map((photo, index) => (
+                                                <img
+                                                    key={index}
+                                                    src={photo}
+                                                    alt={`Review photo ${index + 1}`}
+                                                    className="w-full h-24 object-cover rounded-lg cursor-pointer"
+                                                    onClick={() => openModal(photo)}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
 
-                        {/* Add Review Form */}
-                        {user && user.role === 'traveller' && (
+                        {/* Add Review Form - Only show for users who have booked */}
+                        {user && user.role === 'traveller' && hasBooked && (
                             <div className="bg-white border border-gray-200 p-8 rounded-2xl shadow-sm">
                                 <h4 className="text-lg font-bold text-gray-900 mb-6">Rate your experience</h4>
                                 <form onSubmit={handleSubmitReview}>
@@ -283,19 +338,96 @@ const ListingDetails = () => {
                                     </div>
                                     <div className="mb-6">
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Share your feedback</label>
-                                        <textarea
-                                            className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition resize-none"
-                                            rows="4"
-                                            placeholder="What did you like? What could be improved?"
-                                            required
-                                            value={reviewComment}
-                                            onChange={(e) => setReviewComment(e.target.value)}
-                                        ></textarea>
+                                        <div className="relative">
+                                            <textarea
+                                                className="w-full p-4 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition resize-none"
+                                                rows="4"
+                                                placeholder="What did you like? What could be improved?"
+                                                required
+                                                value={reviewComment}
+                                                onChange={(e) => setReviewComment(e.target.value)}
+                                            ></textarea>
+                                            <button
+                                                type="button"
+                                                onClick={() => document.getElementById('photo-upload').click()}
+                                                className="absolute bottom-3 right-3 p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors group"
+                                                title="Add photos"
+                                            >
+                                                <svg className="w-5 h-5 text-gray-600 group-hover:text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        {reviewPhotos.length > 0 && (
+                                            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                                <p className="text-sm text-green-700 font-medium">{reviewPhotos.length} photo(s) selected</p>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-3">
+                                                    {reviewPhotos.map((photo, index) => (
+                                                        <div key={index} className="relative group">
+                                                            <img
+                                                                src={URL.createObjectURL(photo)}
+                                                                alt={`Selected ${index + 1}`}
+                                                                className="w-full h-20 object-cover rounded-lg border-2 border-green-200 cursor-pointer hover:border-green-400 transition-colors"
+                                                                onClick={() => {
+                                                                    const modal = document.createElement('div');
+                                                                    modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+                                                                    modal.innerHTML = `
+                                                                        <div class="relative max-w-4xl max-h-screen p-4">
+                                                                            <img src="${URL.createObjectURL(photo)}" class="max-w-full max-h-full object-contain rounded-lg" />
+                                                                            <button class="absolute top-2 right-2 bg-white rounded-full p-2 hover:bg-gray-100 transition-colors" onclick="this.parentElement.parentElement.remove()">
+                                                                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                                                </svg>
+                                                                            </button>
+                                                                        </div>
+                                                                    `;
+                                                                    document.body.appendChild(modal);
+                                                                    modal.addEventListener('click', (e) => {
+                                                                        if (e.target === modal) modal.remove();
+                                                                    });
+                                                                }}
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setReviewPhotos(reviewPhotos.filter((_, i) => i !== index));
+                                                                }}
+                                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
+                                    <input
+                                        type="file"
+                                        multiple
+                                        accept="image/*"
+                                        onChange={(e) => setReviewPhotos(Array.from(e.target.files))}
+                                        className="hidden"
+                                        id="photo-upload"
+                                    />
                                     <button type="submit" className="px-8 py-3 bg-gray-900 text-white font-bold rounded-xl hover:bg-black transition shadow-lg">
                                         Post Review
                                     </button>
                                 </form>
+                            </div>
+                        )}
+
+                        {/* Show message for travelers who haven't booked */}
+                        {user && user.role === 'traveller' && !hasBooked && (
+                            <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl text-center">
+                                <p className="text-primary font-medium text-sm mb-2">Want to leave a review?</p>
+                                <p className="text-gray-600 text-xs mb-3">First book this hotel to share your experience!</p>
+                                <button
+                                    onClick={() => document.getElementById('booking-section').scrollIntoView({ behavior: 'smooth' })}
+                                    className="px-4 py-1.5 bg-primary text-white font-medium text-sm rounded-lg hover:brightness-110 transition"
+                                >
+                                    Book Now
+                                </button>
                             </div>
                         )}
                     </div>
@@ -372,7 +504,21 @@ const ListingDetails = () => {
                     </div>
                 </div>
             </div>
+
+            {showModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={closeModal}>
+                    <div className="relative max-w-4xl max-h-screen p-4">
+                        <img src={selectedImage} className="max-w-full max-h-full object-contain rounded-lg" alt="Enlarged view" />
+                        <button onClick={closeModal} className="absolute top-2 right-2 bg-white rounded-full p-2 hover:bg-gray-100 transition-colors">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
+
     );
 };
 

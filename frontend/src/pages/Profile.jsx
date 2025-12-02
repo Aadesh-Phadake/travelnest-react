@@ -1,14 +1,25 @@
-import React, { useEffect, useState } from 'react';
-import api from '../api/axios';
+import { Calendar,Car,Crown,ExternalLink,Gift,Hotel,IndianRupee,MapPin,Settings,Star,Trash2,TrendingUp,Users,Wallet,MessageCircle,Send,X} from 'lucide-react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
-import { Car, MapPin, Calendar, Users, Clock, Hotel, ChevronRight, LogOut, Trash2, ExternalLink, Crown } from 'lucide-react';
+import api from '../api/axios';
 
 const Profile = () => {
     const [profileData, setProfileData] = useState(null);
     const [taxiBookings, setTaxiBookings] = useState([]);
+    const [walletData, setWalletData] = useState(null);
+    const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('hotels'); // 'hotels' or 'taxis'
+    
+    // Chat State
+    const [chatOpen, setChatOpen] = useState(false);
+    const [activeBookingForChat, setActiveBookingForChat] = useState(null);
+    const [chatMessages, setChatMessages] = useState([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [chatLoading, setChatLoading] = useState(false);
+    const [sendingMessage, setSendingMessage] = useState(false);
+    const [activeTab, setActiveTab] = useState(null); // 'hotels', 'taxis', or 'wallet'
+    const [redeemPoints, setRedeemPoints] = useState('');
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -18,6 +29,22 @@ const Profile = () => {
 
                 const taxiRes = await api.get('/taxis/bookings');
                 setTaxiBookings(taxiRes.data.bookings || []);
+
+                // Fetch wallet data only for travellers
+                if (profileRes.data.user.role === 'traveller') {
+                    const walletRes = await api.get('/wallet?t=' + Date.now());
+                    setWalletData(walletRes.data);
+
+                    const transactionsRes = await api.get('/wallet/transactions?t=' + Date.now());
+                    setTransactions(transactionsRes.data.transactions || []);
+                }
+
+                // Set default tab based on user role and navigation
+                if (profileRes.data.user.role === 'traveller' && (walletData || location.state?.timestamp)) {
+                    setActiveTab('wallet');
+                } else {
+                    setActiveTab('hotels');
+                }
             } catch (error) {
                 console.error(error);
                 toast.error("Failed to load profile data");
@@ -27,6 +54,23 @@ const Profile = () => {
         };
         fetchProfile();
     }, []);
+
+    // Refresh wallet data when navigating from checkout
+    useEffect(() => {
+        if (location.state?.timestamp && profileData?.user?.role === 'traveller') {
+            const refreshWallet = async () => {
+                try {
+                    const walletRes = await api.get('/wallet?t=' + Date.now());
+                    setWalletData(walletRes.data);
+                    const transactionsRes = await api.get('/wallet/transactions?t=' + Date.now());
+                    setTransactions(transactionsRes.data.transactions || []);
+                } catch (error) {
+                    console.log('Wallet refresh failed:', error);
+                }
+            };
+            refreshWallet();
+        }
+    }, [location.state, profileData]);
 
     const handleCancelBooking = async (id) => {
         if(!window.confirm("Are you sure you want to cancel this booking?")) return;
@@ -39,6 +83,76 @@ const Profile = () => {
             toast.success("Booking cancelled");
         } catch (error) {
             toast.error("Could not cancel booking");
+        }
+    };
+
+    // Chat Functions
+    const openChat = async (booking) => {
+        setActiveBookingForChat(booking);
+        setChatOpen(true);
+        setChatLoading(true);
+        try {
+            const res = await api.get(`/api/chat/booking/${booking._id}`);
+            setChatMessages(res.data?.chat?.messages || []);
+        } catch (error) {
+            console.error('Error loading chat:', error);
+            setChatMessages([]);
+        } finally {
+            setChatLoading(false);
+        }
+    };
+
+    const closeChat = () => {
+        setChatOpen(false);
+        setActiveBookingForChat(null);
+        setChatMessages([]);
+        setNewMessage('');
+    };
+
+    const sendMessage = async () => {
+        if (!newMessage.trim() || !activeBookingForChat) return;
+        
+        setSendingMessage(true);
+        try {
+            const res = await api.post(`/api/chat/booking/${activeBookingForChat._id}/message`, {
+                message: newMessage.trim()
+            });
+            if (res.data?.message) {
+                setChatMessages(prev => [...prev, res.data.message]);
+            }
+            setNewMessage('');
+        } catch (error) {
+            toast.error('Failed to send message');
+        } finally {
+            setSendingMessage(false);
+        }
+    };
+
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    };
+    const handleRedeemPoints = async (points, discountAmount) => {
+        if (!window.confirm(`Are you sure you want to redeem ${points} points for ₹${discountAmount} discount?`)) return;
+
+        try {
+            const response = await api.post('/wallet/redeem', { points });
+            toast.success(response.data.message);
+
+            // Update wallet data
+            setWalletData(prev => ({
+                ...prev,
+                walletBalance: response.data.newBalance,
+                rewardPoints: response.data.remainingPoints
+            }));
+
+            // Refresh transactions
+            const transactionsRes = await api.get('/wallet/transactions');
+            setTransactions(transactionsRes.data.transactions || []);
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to redeem points");
         }
     };
 
@@ -65,9 +179,21 @@ const Profile = () => {
                     </div>
                     
                     <div className="flex-1 text-center md:text-left space-y-1">
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-300">{user.username}</h1>
-                        <p className="text-gray-500 dark:text-gray-400">{user.email}</p>
-                        
+                        <div className="flex items-center justify-center md:justify-between mb-2">
+                            <div className="md:hidden"></div>
+                            <div className="text-center md:text-left">
+                                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-300">{user.username}</h1>
+                                <p className="text-gray-500 dark:text-gray-400">{user.email}</p>
+                            </div>
+                            <Link
+                                to="/profile/settings"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition text-sm font-medium"
+                            >
+                                <Settings className="w-4 h-4" />
+                                Settings
+                            </Link>
+                        </div>
+
                         <div className="pt-2 flex flex-wrap justify-center md:justify-start gap-3">
                             {isMember ? (
                                 <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-200">
@@ -88,7 +214,7 @@ const Profile = () => {
 
                 {/* --- 2. Tabs Navigation --- */}
                 <div className="flex border-b border-gray-200 dark:border-gray-700 mb-8">
-                    <button 
+                    <button
                         onClick={() => setActiveTab('hotels')}
                         className={`pb-4 px-6 text-sm font-medium transition-all relative ${
                             activeTab === 'hotels' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'
@@ -97,7 +223,7 @@ const Profile = () => {
                         <span className="flex items-center gap-2"><Hotel className="w-4 h-4"/> Hotel Bookings</span>
                         {activeTab === 'hotels' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>}
                     </button>
-                    <button 
+                    <button
                         onClick={() => setActiveTab('taxis')}
                         className={`pb-4 px-6 text-sm font-medium transition-all relative ${
                             activeTab === 'taxis' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'
@@ -106,6 +232,33 @@ const Profile = () => {
                         <span className="flex items-center gap-2"><Car className="w-4 h-4"/> Taxi Rides</span>
                         {activeTab === 'taxis' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>}
                     </button>
+                    {user.role === 'traveller' && (
+                        <button
+                            onClick={() => {
+                                setActiveTab('wallet');
+                                // Refresh wallet data when switching to wallet tab
+                                if (user.role === 'traveller') {
+                                    const fetchWalletData = async () => {
+                                        try {
+                                            const res = await api.get('/wallet?t=' + Date.now());
+                                            setWalletData(res.data);
+                                            const transactionsRes = await api.get('/wallet/transactions?t=' + Date.now());
+                                            setTransactions(transactionsRes.data.transactions || []);
+                                        } catch (error) {
+                                            console.log('Wallet data not available:', error);
+                                        }
+                                    };
+                                    fetchWalletData();
+                                }
+                            }}
+                            className={`pb-4 px-6 text-sm font-medium transition-all relative ${
+                                activeTab === 'wallet' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                        >
+                            <span className="flex items-center gap-2"><Wallet className="w-4 h-4"/> Wallet & Rewards</span>
+                            {activeTab === 'wallet' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>}
+                        </button>
+                    )}
                 </div>
 
                 {/* --- 3. Content Area --- */}
@@ -115,28 +268,43 @@ const Profile = () => {
                     <div className="space-y-6">
                         {bookings.length > 0 ? (
                             bookings.map(booking => (
-                                <div key={booking._id} className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-all duration-300">
+                                <div key={booking._id} className={`group bg-white dark:bg-gray-800 rounded-xl border overflow-hidden hover:shadow-md transition-all duration-300 ${
+                                    booking.status === 'cancelled' 
+                                        ? 'border-red-200 dark:border-red-800 bg-red-50/30 dark:bg-red-900/10' 
+                                        : 'border-gray-200 dark:border-gray-700'
+                                }`}>
                                     <div className="flex flex-col md:flex-row">
                                         
                                         {/* Image Section */}
                                         <div className="md:w-48 h-32 md:h-auto bg-gray-200 relative">
                                             {booking.listing?.images?.[0] ? (
-                                                <img src={booking.listing.images[0]} alt="Hotel" className="w-full h-full object-cover" />
+                                                <img src={booking.listing.images[0]} alt="Hotel" className={`w-full h-full object-cover ${booking.status === 'cancelled' ? 'opacity-60' : ''}`} />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100">
                                                     <Hotel className="w-8 h-8" />
                                                 </div>
                                             )}
-                                            <div className="absolute top-2 left-2 bg-white/90 backdrop-blur px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
-                                                Confirmed
+                                            {/* Status Badge */}
+                                            <div className={`absolute top-2 left-2 backdrop-blur px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                                booking.status === 'cancelled'
+                                                    ? 'bg-red-500/90 text-white'
+                                                    : 'bg-green-500/90 text-white'
+                                            }`}>
+                                                {booking.status === 'cancelled' ? 'Cancelled' : 'Confirmed'}
                                             </div>
+                                            {/* Payment Status Badge */}
+                                            {booking.paymentStatus === 'refunded' && (
+                                                <div className="absolute top-2 right-2 bg-orange-500/90 backdrop-blur px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-white">
+                                                    Refunded
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Details Section */}
                                         <div className="flex-1 p-5">
                                             <div className="flex justify-between items-start mb-2">
                                                 <div>
-                                                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary transition">
+                                                    <h3 className={`text-lg font-bold group-hover:text-primary transition ${booking.status === 'cancelled' ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
                                                         {booking.listing?.title || "Property Unavailable"}
                                                     </h3>
                                                     <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
@@ -145,8 +313,10 @@ const Profile = () => {
                                                     </p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-lg font-bold text-gray-900">₹{booking.totalAmount.toLocaleString('en-IN')}</p>
-                                                    <p className="text-xs text-gray-400">Total Paid</p>
+                                                    <p className={`text-lg font-bold ${booking.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>₹{booking.totalAmount.toLocaleString('en-IN')}</p>
+                                                    <p className="text-xs text-gray-400">
+                                                        {booking.paymentStatus === 'refunded' ? 'Refunded' : 'Total Paid'}
+                                                    </p>
                                                 </div>
                                             </div>
 
@@ -161,6 +331,21 @@ const Profile = () => {
                                                 </div>
                                             </div>
 
+                                            {/* Cancellation Info - Show if booking was cancelled */}
+                                            {booking.status === 'cancelled' && (
+                                                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 mb-4 text-sm">
+                                                    <p className="text-red-700 dark:text-red-400 font-medium">
+                                                        Booking cancelled {booking.cancelledBy ? `by ${booking.cancelledBy}` : ''}
+                                                        {booking.cancelledAt && ` on ${new Date(booking.cancelledAt).toLocaleDateString('en-GB')}`}
+                                                    </p>
+                                                    {booking.refundId && (
+                                                        <p className="text-red-600 dark:text-red-500 text-xs mt-1">
+                                                            Refund ID: {booking.refundId}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
+
                                             {/* Actions Footer */}
                                             <div className="flex items-center gap-3 pt-4 border-t border-gray-50">
                                                 <Link 
@@ -170,8 +355,18 @@ const Profile = () => {
                                                     View Hotel <ExternalLink className="w-3.5 h-3.5" />
                                                 </Link>
 
-                                                {/* Taxi Button - Highlighted */}
-                                                {booking.listing && (
+                                                {/* Contact Host Button - Only for confirmed bookings */}
+                                                {booking.listing && booking.status !== 'cancelled' && (
+                                                    <button
+                                                        onClick={() => openChat(booking)}
+                                                        className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 px-3 py-2 rounded hover:bg-blue-50 transition"
+                                                    >
+                                                        <MessageCircle className="w-4 h-4" /> Contact Host
+                                                    </button>
+                                                )}
+
+                                                {/* Taxi Button - Only for confirmed bookings */}
+                                                {booking.listing && booking.status !== 'cancelled' && (
                                                     <Link 
                                                         to={`/listings/${booking.listing._id}/taxi`} 
                                                         className="ml-auto inline-flex items-center gap-2 bg-yellow-400 text-black text-sm font-semibold px-4 py-2 rounded-full hover:bg-yellow-500 transition shadow-sm"
@@ -180,12 +375,15 @@ const Profile = () => {
                                                     </Link>
                                                 )}
 
-                                                <button 
-                                                    onClick={() => handleCancelBooking(booking._id)}
-                                                    className="inline-flex items-center gap-1 text-sm font-medium text-red-500 hover:text-red-700 px-3 py-2 rounded hover:bg-red-50 transition"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" /> Cancel
-                                                </button>
+                                                {/* Cancel Button - Only for confirmed bookings */}
+                                                {booking.status !== 'cancelled' && (
+                                                    <button 
+                                                        onClick={() => handleCancelBooking(booking._id)}
+                                                        className="inline-flex items-center gap-1 text-sm font-medium text-red-500 hover:text-red-700 px-3 py-2 rounded hover:bg-red-50 transition"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" /> Cancel
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -259,7 +457,273 @@ const Profile = () => {
                     </div>
                 )}
 
+                {/* WALLET & REWARDS TAB */}
+                {activeTab === 'wallet' && user.role === 'traveller' && (
+                    <div className="space-y-6">
+                        {/* Wallet Balance & Points Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Wallet Balance Card */}
+                            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-800">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                                            <Wallet className="w-6 h-6 text-white" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Wallet Balance</h3>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">Available for bookings</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                                    ₹{walletData?.walletBalance?.toLocaleString('en-IN') || '0'}
+                                </div>
+                            </div>
+
+                            {/* Reward Points Card */}
+                            <div className="bg-gradient-to-br from-purple-50 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl p-6 border border-purple-200 dark:border-purple-800">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center">
+                                            <Star className="w-6 h-6 text-white" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Reward Points</h3>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">Earn more with bookings</p>
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    const res = await api.get('/wallet?t=' + Date.now());
+                                                    setWalletData(res.data);
+                                                    const transactionsRes = await api.get('/wallet/transactions?t=' + Date.now());
+                                                    setTransactions(transactionsRes.data.transactions || []);
+                                                    toast.success('Wallet data refreshed');
+                                                } catch (error) {
+                                                    console.log('Wallet refresh failed:', error);
+                                                    toast.error('Failed to refresh wallet data');
+                                                }
+                                            }}
+                                            className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                                        >
+                                            Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                                    {walletData?.rewardPoints?.toLocaleString('en-IN') || '0'} pts
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Earn & Redeem Section */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Earn Points Info */}
+                            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                                        <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Earn Points</h3>
+                                </div>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-gray-600 dark:text-gray-400">Per ₹100 spent</span>
+                                        <span className="font-semibold text-green-600 dark:text-green-400">10 points</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-gray-600 dark:text-gray-400">Next booking reward</span>
+                                        <span className="font-semibold text-blue-600 dark:text-blue-400">Coming soon</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Redeem Points */}
+                            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                                        <Gift className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Redeem Points</h3>
+                                </div>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-gray-600 dark:text-gray-400">100 points =</span>
+                                        <span className="font-semibold text-orange-600 dark:text-orange-400">₹5 discount</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            Number of points to redeem
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={redeemPoints}
+                                            onChange={(e) => setRedeemPoints(e.target.value)}
+                                            min="20"
+                                            max={walletData?.rewardPoints || 0}
+                                            step="20"
+                                            placeholder="Enter points (min 20)"
+                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-gray-100"
+                                        />
+                                        {redeemPoints && (
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                You will get ₹{Math.floor(parseInt(redeemPoints) / 20) || 0} discount
+                                            </p>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            const points = parseInt(redeemPoints);
+                                            const discount = Math.floor(points / 20);
+                                            if (points >= 20 && discount > 0) {
+                                                handleRedeemPoints(points, discount);
+                                                setRedeemPoints('');
+                                            }
+                                        }}
+                                        disabled={!redeemPoints || parseInt(redeemPoints) < 20 || parseInt(redeemPoints) > (walletData?.rewardPoints || 0)}
+                                        className="w-full mt-4 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                                    >
+                                        Redeem Points
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Transaction History */}
+                        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Transaction History</h3>
+                            {transactions.length > 0 ? (
+                                <div className="space-y-3">
+                                    {transactions.map((transaction, index) => (
+                                        <div key={index} className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                                    transaction.type === 'earn' ? 'bg-green-100 dark:bg-green-900/30' :
+                                                    transaction.type === 'redeem' ? 'bg-orange-100 dark:bg-orange-900/30' :
+                                                    'bg-blue-100 dark:bg-blue-900/30'
+                                                }`}>
+                                                    {transaction.type === 'earn' ? (
+                                                        <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                                    ) : transaction.type === 'redeem' ? (
+                                                        <Gift className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                                                    ) : (
+                                                        <IndianRupee className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium text-gray-900 dark:text-gray-100">{transaction.description}</p>
+                                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                        {new Date(transaction.createdAt).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className={`font-semibold ${
+                                                transaction.type === 'earn' ? 'text-green-600 dark:text-green-400' :
+                                                transaction.type === 'redeem' ? 'text-orange-600 dark:text-orange-400' :
+                                                'text-blue-600 dark:text-blue-400'
+                                            }`}>
+                                                {transaction.type === 'earn' ? '+' : transaction.type === 'redeem' ? '-' : ''}
+                                                {transaction.type === 'earn' ? `${Math.round(transaction.amount / 10)} pts` : `₹${transaction.amount}`}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8">
+                                    <Wallet className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                                    <p className="text-gray-500 dark:text-gray-400">No transactions yet</p>
+                                    <p className="text-sm text-gray-400 dark:text-gray-500">Make your first booking to start earning points!</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
             </div>
+
+            {/* Chat Modal */}
+            {chatOpen && activeBookingForChat && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md h-[500px] flex flex-col overflow-hidden">
+                        {/* Chat Header */}
+                        <div className="bg-gradient-to-r from-primary to-primary/80 text-white p-4 flex items-center justify-between">
+                            <div>
+                                <h3 className="font-bold text-lg">Contact Host</h3>
+                                <p className="text-white/70 text-sm truncate max-w-[250px]">
+                                    {activeBookingForChat.listing?.title}
+                                </p>
+                            </div>
+                            <button 
+                                onClick={closeChat}
+                                className="p-2 hover:bg-white/20 rounded-full transition"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Chat Messages */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-gray-900">
+                            {chatLoading ? (
+                                <div className="flex items-center justify-center h-full">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                </div>
+                            ) : chatMessages.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                                    <MessageCircle className="w-12 h-12 mb-3 opacity-50" />
+                                    <p className="text-sm">No messages yet</p>
+                                    <p className="text-xs mt-1">Start the conversation with the host!</p>
+                                </div>
+                            ) : (
+                                chatMessages.map((msg, index) => (
+                                    <div 
+                                        key={index}
+                                        className={`flex ${msg.senderRole === 'traveler' ? 'justify-end' : 'justify-start'}`}
+                                    >
+                                        <div className={`max-w-[75%] rounded-2xl px-4 py-2 ${
+                                            msg.senderRole === 'traveler'
+                                                ? 'bg-primary text-white rounded-br-md'
+                                                : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-md shadow-sm'
+                                        }`}>
+                                            <p className="text-sm">{msg.message}</p>
+                                            <p className={`text-[10px] mt-1 ${
+                                                msg.senderRole === 'traveler' ? 'text-white/70' : 'text-gray-400'
+                                            }`}>
+                                                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Chat Input */}
+                        <div className="p-4 bg-white dark:bg-gray-800 border-t dark:border-gray-700">
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    onKeyPress={handleKeyPress}
+                                    placeholder="Type a message..."
+                                    className="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                    disabled={sendingMessage}
+                                />
+                                <button
+                                    onClick={sendMessage}
+                                    disabled={!newMessage.trim() || sendingMessage}
+                                    className="p-2.5 bg-primary text-white rounded-full hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {sendingMessage ? (
+                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    ) : (
+                                        <Send className="w-5 h-5" />
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

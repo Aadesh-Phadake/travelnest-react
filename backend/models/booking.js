@@ -49,6 +49,39 @@ const bookingSchema = new Schema({
             default: 0
         }
     },
+    // Booking status: confirmed, cancelled
+    status: {
+        type: String,
+        enum: ['confirmed', 'cancelled'],
+        default: 'confirmed'
+    },
+    // Payment status: pending, paid, refunded
+    paymentStatus: {
+        type: String,
+        enum: ['pending', 'paid', 'refunded'],
+        default: 'paid'
+    },
+    // Razorpay payment ID (needed for refunds)
+    paymentId: {
+        type: String,
+        default: null
+    },
+    // Razorpay refund ID (after refund is processed)
+    refundId: {
+        type: String,
+        default: null
+    },
+    // Who cancelled the booking: 'user', 'owner', 'admin'
+    cancelledBy: {
+        type: String,
+        enum: ['user', 'owner', 'admin', null],
+        default: null
+    },
+    // When the booking was cancelled
+    cancelledAt: {
+        type: Date,
+        default: null
+    },
     createdAt: {
         type: Date,
         default: Date.now

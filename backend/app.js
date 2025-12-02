@@ -17,10 +17,13 @@ const reviewRouter = require('./routes/review');
 const userRouter = require('./routes/user');
 const paymentRouter = require('./routes/payment');
 const taxiRouter = require('./routes/taxi');
+const bookingRouter = require('./routes/booking');
 const adminApiRouter = require('./routes/adminApi');
 const managerRouter = require('./routes/manager');
 const uploadRouter = require('./routes/upload');
 const contactRouter = require('./routes/contact');
+const chatRouter = require('./routes/chat');
+const walletRouter = require('./routes/wallet');
 
 const PORT = process.env.PORT || 8080;
 const MONGO_URL = process.env.MONGO_URL;
@@ -28,7 +31,7 @@ const MONGO_URL = process.env.MONGO_URL;
 // Middleware setup
 // 1. Allow requests from your React App (Assuming it runs on port 5173 or 3000)
 app.use(cors({
-    origin: 'http://localhost:5173', // CHANGE THIS to your React localhost port
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'], // Support multiple ports
     credentials: true // Essential for maintaining sessions/cookies with React
 }));
 
@@ -79,12 +82,15 @@ passport.deserializeUser(User.deserializeUser());
 app.use('/listings', listingRouter);
 app.use('/listings/:id/reviews', reviewRouter);
 app.use('/', userRouter);
+app.use('/bookings', bookingRouter);
 app.use('/payment', paymentRouter);
 app.use('/', taxiRouter);
+app.use('/wallet', walletRouter);
 app.use('/api/admin', adminApiRouter);
 app.use('/manager', managerRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/contact', contactRouter);
+app.use('/api/chat', chatRouter);
 
 // Root route
 app.get('/', (req, res) => {
