@@ -5,16 +5,16 @@ require('dotenv').config();
 // Support both CLOUDINARY_URL and individual credentials
 if (process.env.CLOUDINARY_URL) {
     cloudinary.config();
-    console.log('✅ Cloudinary configured using CLOUDINARY_URL');
+    console.log('Cloudinary configured using CLOUDINARY_URL');
 } else if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
     cloudinary.config({
         cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
         api_key: process.env.CLOUDINARY_API_KEY,
         api_secret: process.env.CLOUDINARY_API_SECRET
     });
-    console.log('✅ Cloudinary configured using individual credentials');
+    console.log('Cloudinary configured using individual credentials');
 } else {
-    console.warn('⚠️  Cloudinary not configured! Please set CLOUDINARY_URL or individual credentials in .env');
+    console.warn('Cloudinary not configured! Please set CLOUDINARY_URL or individual credentials in .env');
 }
 
 // Upload image to Cloudinary
@@ -34,7 +34,7 @@ const uploadToCloudinary = async (file, folder = 'travelnest') => {
             ]
         });
         
-        console.log(`✅ Upload successful: ${result.secure_url}`);
+        console.log(`Upload successful: ${result.secure_url}`);
         return result.secure_url;
     } catch (error) {
         console.error('Cloudinary upload error:', error);
@@ -73,7 +73,7 @@ const uploadDocumentToCloudinary = async (file, folder = 'travelnest/licenses') 
             allowed_formats: ['pdf', 'jpg', 'jpeg', 'png']
         });
         
-        console.log(`✅ Document upload successful: ${result.secure_url}`);
+        console.log(`Document upload successful: ${result.secure_url}`);
         return result.secure_url;
     } catch (error) {
         console.error('Cloudinary document upload error:', error);

@@ -170,7 +170,7 @@ exports.verifyPaymentWithFee = async (razorpay_order_id, razorpay_payment_id, ra
             });
             await newBooking.save();
 
-            console.log(`✅ Booking created: ${newBooking._id}. ${allocationResult.message}`);
+            console.log(`Booking created: ${newBooking._id}. ${allocationResult.message}`);
 
             return {
                 success: true,

@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require('../models/user');
 const Listing = require('../models/listing');
 const Booking = require('../models/booking');
+const Review = require('../models/review');
 const ContactMessage = require('../models/contactMessage');
 const { isLoggedIn } = require('../middleware');
 
@@ -30,13 +31,27 @@ router.get('/users', isLoggedIn, requireAdmin, async (req, res) => {
         const users = await User.find({ username: { $ne: "TravelNest" } })
             .sort('-createdAt');
         
-        // Add booking statistics for each user
-        const usersWithStats = await Promise.all(users.map(async (user) => {
-            const bookings = await Booking.find({ user: user._id });
-            const totalBookings = bookings.length;
-            const totalSpent = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
-            const lastBooking = bookings.length > 0 ? 
-                Math.max(...bookings.map(b => new Date(b.createdAt).getTime())) : null;
+        // Aggregate booking statistics for all users in one query
+        const bookingStats = await Booking.aggregate([
+            {
+                $group: {
+                    _id: '$user',
+                    totalBookings: { $sum: 1 },
+                    totalSpent: { $sum: '$totalAmount' },
+                    lastBooking: { $max: '$createdAt' }
+                }
+            }
+        ]);
+
+        // Create a map for O(1) lookup
+        const statsMap = {};
+        bookingStats.forEach(stat => {
+            if (stat._id) statsMap[String(stat._id)] = stat;
+        });
+        
+        // Map stats to users
+        const usersWithStats = users.map((user) => {
+            const stat = statsMap[String(user._id)] || {};
             
             return {
                 _id: user._id,
@@ -45,11 +60,11 @@ router.get('/users', isLoggedIn, requireAdmin, async (req, res) => {
                 createdAt: user.createdAt,
                 isMember: user.isMember || false,
                 membershipExpiresAt: user.membershipExpiresAt,
-                totalBookings,
-                totalSpent,
-                lastBooking: lastBooking ? new Date(lastBooking) : null
+                totalBookings: stat.totalBookings || 0,
+                totalSpent: stat.totalSpent || 0,
+                lastBooking: stat.lastBooking ? new Date(stat.lastBooking) : null
             };
-        }));
+        });
         
         res.status(200).json({ success: true, users: usersWithStats });
     } catch (error) {
@@ -62,7 +77,6 @@ router.get('/users', isLoggedIn, requireAdmin, async (req, res) => {
 router.get('/hotels', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         // Only fetch approved hotels (or legacy ones with no status)
-        // Pending hotels are shown in the "Approvals" tab
         const hotels = await Listing.find({
             $or: [
                 { status: 'approved' },
@@ -72,28 +86,35 @@ router.get('/hotels', isLoggedIn, requireAdmin, async (req, res) => {
             .populate('owner', 'username email')
             .sort('-createdAt');
         
-        // Add booking count and revenue/commission stats for each hotel
         const OWNER_REVENUE_RATE = 0.15;
-        const hotelsWithStats = await Promise.all(hotels.map(async (hotel) => {
-            const bookingCount = await Booking.countDocuments({ listing: hotel._id });
-            const totals = await Booking.aggregate([
-                { $match: { listing: hotel._id } },
-                {
-                    $group: {
-                        _id: null,
-                        total: { $sum: '$totalAmount' },
-                        totalCommission: { $sum: '$platformCommission' }
-                    }
-                }
-            ]);
 
-            const grossRevenue = totals[0] ? totals[0].total : 0;
-            const commission = totals[0] ? (totals[0].totalCommission || 0) : 0;
+        // Aggregate booking stats for all hotels in one query
+        const bookingStats = await Booking.aggregate([
+            {
+                $group: {
+                    _id: '$listing',
+                    bookingCount: { $sum: 1 },
+                    revenue: { $sum: '$totalAmount' },
+                    commission: { $sum: '$platformCommission' }
+                }
+            }
+        ]);
+
+        // Create a map for O(1) lookup
+        const statsMap = {};
+        bookingStats.forEach(stat => {
+            if (stat._id) statsMap[String(stat._id)] = stat;
+        });
+        
+        const hotelsWithStats = hotels.map((hotel) => {
+            const stat = statsMap[String(hotel._id)] || {};
+            
+            const grossRevenue = stat.revenue || 0;
+            const commission = stat.commission || 0;
             const ownerGrossRevenue = Math.max(0, grossRevenue - commission);
             const ownerCommission = ownerGrossRevenue * OWNER_REVENUE_RATE;
             const platformRevenue = commission + ownerCommission;
             
-            // Prefer createdAt; fall back to ObjectId timestamp for older documents
             const createdAt = hotel.createdAt || (hotel._id && hotel._id.getTimestamp ? hotel._id.getTimestamp() : null);
             
             return {
@@ -105,13 +126,13 @@ router.get('/hotels', isLoggedIn, requireAdmin, async (req, res) => {
                 owner: hotel.owner,
                 createdAt,
                 lastUpdated: hotel.lastUpdated,
-                bookingCount,
+                bookingCount: stat.bookingCount || 0,
                 revenue: grossRevenue,
                 commission,
                 platformRevenue,
                 images: hotel.images
             };
-        }));
+        });
         
         res.status(200).json({ success: true, hotels: hotelsWithStats });
     } catch (error) {
@@ -219,7 +240,9 @@ router.get('/owners', isLoggedIn, requireAdmin, async (req, res) => {
                 platformRevenue,
                 createdAt: user.createdAt,
             };
-        }).sort((a, b) => (b.platformRevenue || 0) - (a.platformRevenue || 0));
+        })
+        .filter(owner => owner.username !== 'Unknown') // Filter out orphaned data
+        .sort((a, b) => (b.platformRevenue || 0) - (a.platformRevenue || 0));
 
         res.status(200).json({ success: true, owners: ownersWithStats });
     } catch (error) {
@@ -233,19 +256,46 @@ router.delete('/users/:id', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         
-        // Also delete user's bookings
+        // 1. Delete bookings made BY this user (as a traveller)
         await Booking.deleteMany({ user: id });
 
-        // Delete listings owned by the user (if they are a manager)
-        await Listing.deleteMany({ owner: id });
+        // 2. If user is a manager, find their hotels to clean up related data
+        const userListings = await Listing.find({ owner: id });
+        
+        if (userListings.length > 0) {
+            const listingIds = userListings.map(l => l._id);
+            
+            // Delete bookings FOR these hotels
+            await Booking.deleteMany({ listing: { $in: listingIds } });
+            
+            // Delete reviews FOR these hotels
+            const reviewIds = userListings.reduce((acc, listing) => {
+                if (listing.reviews && listing.reviews.length > 0) {
+                    return acc.concat(listing.reviews);
+                }
+                return acc;
+            }, []);
+            
+            if (reviewIds.length > 0) {
+                await Review.deleteMany({ _id: { $in: reviewIds } });
+            }
+
+            // Delete the hotels themselves
+            await Listing.deleteMany({ owner: id });
+        }
 
         const deletedUser = await User.findByIdAndDelete(id);
         
         if (!deletedUser) {
-            return res.status(404).json({ error: 'User not found' });
+            // If user is not found, but we might have cleaned up associated data (bookings/listings)
+            // We should consider this a success for the admin's intent of "removing this entity"
+            return res.status(200).json({ 
+                success: true, 
+                message: 'User was already deleted, but associated data has been cleaned up.' 
+            });
         }
         
-        res.status(200).json({ success: true, message: 'User and their bookings deleted successfully' });
+        res.status(200).json({ success: true, message: 'User and their associated data deleted successfully' });
     } catch (error) {
         console.error('Error deleting user:', error);
         res.status(500).json({ error: 'Failed to delete user' });
@@ -262,6 +312,9 @@ router.delete('/hotels/:id', isLoggedIn, requireAdmin, async (req, res) => {
         if (!deletedHotel) {
             return res.status(404).json({ error: 'Hotel not found' });
         }
+
+        // Delete bookings associated with this hotel
+        await Booking.deleteMany({ listing: id });
         
         res.status(200).json({ success: true, message: 'Hotel deleted successfully' });
     } catch (error) {
@@ -392,18 +445,22 @@ router.patch('/hotels/:id/approve', isLoggedIn, requireAdmin, async (req, res) =
 router.patch('/hotels/:id/reject', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
+        const { reason } = req.body;
         
-        // Delete the hotel listing and its associated bookings
-        const deletedHotel = await Listing.findByIdAndDelete(id);
+        const updateData = {
+            status: 'rejected',
+            rejectionReason: reason || 'Does not meet platform guidelines',
+            approvedAt: null,
+            approvedBy: null
+        };
+
+        const updatedHotel = await Listing.findByIdAndUpdate(id, updateData, { new: true });
         
-        if (!deletedHotel) {
+        if (!updatedHotel) {
             return res.status(404).json({ error: 'Hotel not found' });
         }
-
-        // Clean up any bookings associated with this listing (though unlikely for pending hotels)
-        await Booking.deleteMany({ listing: id });
         
-        res.status(200).json({ success: true, message: 'Hotel rejected and removed successfully' });
+        res.status(200).json({ success: true, message: 'Hotel rejected successfully' });
     } catch (error) {
         console.error('Error rejecting hotel:', error);
         res.status(500).json({ error: 'Failed to reject hotel' });

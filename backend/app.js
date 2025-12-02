@@ -39,9 +39,9 @@ app.use(express.urlencoded({ extended: true }));
 async function main() {
     try {
         await mongoose.connect(MONGO_URL);
-        console.log('✅ Connected to MongoDB');
+        console.log('Connected to MongoDB');
     } catch (err) {
-        console.error('❌ MongoDB Connection Error:', err);
+        console.error('MongoDB Connection Error:', err);
     }
 }
 main();
@@ -106,4 +106,4 @@ app.use((err, req, res, next) => {
     });
 });
 
-app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));

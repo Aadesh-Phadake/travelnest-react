@@ -58,39 +58,40 @@ const OwnerDashboard = () => {
             return;
         }
 
+        const fetchDashboardData = async () => {
+            try {
+                setLoading(true);
+                
+                // Fetch manager's hotels
+                const hotelsRes = await api.get('/manager/api/hotels');
+                setProperties(hotelsRes.data?.hotels || []);
+
+                // Fetch bookings for manager's hotels
+                const bookingsRes = await api.get('/manager/api/bookings');
+                setBookings(bookingsRes.data?.bookings || []);
+            } catch (error) {
+                console.error('Dashboard fetch error:', error);
+                if (error.response?.status === 401) {
+                    toast.error("Please login to access the dashboard");
+                    navigate('/login');
+                } else if (error.response?.status === 403) {
+                    // Use the specific message from backend if available
+                    setAccessError(error.response?.data?.message || 'Access denied.');
+                } else {
+                    toast.error("Failed to load dashboard data");
+                }
+            } finally {
+                setLoading(false);
+            }
+        };
+
         fetchDashboardData();
     }, [user, navigate]);
-    //fetching the dashboard data 
-    const fetchDashboardData = async () => {
-        try {
-            setLoading(true);
-            
-            // Fetch manager's hotels
-            const hotelsRes = await api.get('/manager/api/hotels');
-            setProperties(hotelsRes.data?.hotels || []);
-
-            // Fetch bookings for manager's hotels
-            const bookingsRes = await api.get('/manager/api/bookings');
-            setBookings(bookingsRes.data?.bookings || []);
-        } catch (error) {
-            console.error('Dashboard fetch error:', error);
-            if (error.response?.status === 401) {
-                toast.error("Please login to access the dashboard");
-                navigate('/login');
-            } else if (error.response?.status === 403) {
-                // Use the specific message from backend if available
-                setAccessError(error.response?.data?.message || 'Access denied.');
-            } else {
-                toast.error("Failed to load dashboard data");
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
 
     // Filter properties
     const activeProperties = properties.filter(p => !p.status || p.status === 'approved');
     const pendingProperties = properties.filter(p => p.status === 'pending');
+    const rejectedProperties = properties.filter(p => p.status === 'rejected');
 
     // Calculate statistics
     const totalProperties = activeProperties.length;
@@ -337,6 +338,25 @@ const OwnerDashboard = () => {
                                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>
                             )}
                         </button>
+                        <button 
+                            onClick={() => setActiveTab('rejected')}
+                            className={`pb-4 px-6 text-sm font-medium transition-all relative ${
+                                activeTab === 'rejected' ? 'text-red-600' : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                        >
+                            <span className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded-full border-2 border-current flex items-center justify-center text-[10px] font-bold">!</div>
+                                Rejected
+                                {rejectedProperties.length > 0 && (
+                                    <span className="bg-red-100 text-red-800 text-xs py-0.5 px-2 rounded-full">
+                                        {rejectedProperties.length}
+                                    </span>
+                                )}
+                            </span>
+                            {activeTab === 'rejected' && (
+                                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-red-600 rounded-t-full"></span>
+                            )}
+                        </button>
                     </div>
 
                     {/* Properties Table */}
@@ -488,6 +508,74 @@ const OwnerDashboard = () => {
                                         <tr>
                                             <td colSpan="5" className="py-8 text-center text-gray-500">
                                                 No pending approvals.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {/* Rejected Properties Table */}
+                    {activeTab === 'rejected' && (
+                        <div className="mt-6 overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                        <th className="pb-4 pr-6">Title</th>
+                                        <th className="pb-4 pr-6">Status</th>
+                                        <th className="pb-4 pr-6">Rejection Reason</th>
+                                        <th className="pb-4 pr-6">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {rejectedProperties.length > 0 ? (
+                                        rejectedProperties.map(property => (
+                                            <tr key={property._id} className="hover:bg-gray-50 transition">
+                                                <td className="py-4 pr-6">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 opacity-50 grayscale">
+                                                            {property.images?.[0] ? (
+                                                                <img 
+                                                                    src={property.images[0]} 
+                                                                    alt={property.title}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                    <Building2 className="w-5 h-5 text-gray-400" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-gray-900 font-medium line-through text-gray-500">
+                                                                {property.title}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-4 pr-6">
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                        Rejected
+                                                    </span>
+                                                </td>
+                                                <td className="py-4 pr-6">
+                                                    <span className="text-sm text-red-600 font-medium">
+                                                        {property.rejectionReason || 'Does not meet platform guidelines'}
+                                                    </span>
+                                                </td>
+                                                <td className="py-4 text-gray-500">
+                                                    {property.updatedAt 
+                                                        ? new Date(property.updatedAt).toLocaleDateString('en-GB')
+                                                        : 'N/A'
+                                                    }
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="4" className="py-8 text-center text-gray-500">
+                                                No rejected properties.
                                             </td>
                                         </tr>
                                     )}

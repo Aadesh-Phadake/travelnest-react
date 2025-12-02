@@ -87,6 +87,10 @@ const ListingSchema = new schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         default: null
+    },
+    rejectionReason: {
+        type: String,
+        default: null
     }
 }, {
     timestamps: true

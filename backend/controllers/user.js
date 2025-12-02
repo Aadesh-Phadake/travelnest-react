@@ -199,7 +199,7 @@ module.exports.deleteBooking = async (req, res) => {
                 listing.rooms = (listing.roomTypes.single || 0) + (listing.roomTypes.double || 0) + (listing.roomTypes.triple || 0);
                 
                 await listing.save();
-                console.log(`✅ Rooms restored for booking ${booking._id}`);
+                console.log(`Rooms restored for booking ${booking._id}`);
             }
         }
 
