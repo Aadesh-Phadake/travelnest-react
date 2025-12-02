@@ -13,6 +13,20 @@ const userSchema = new schema({
         enum: ['traveller', 'manager', 'admin'],
         default: 'traveller'
     },
+    // Manager approval fields
+    isApproved: {
+        type: Boolean,
+        default: true // normal users are approved by default
+    },
+    approvedAt: {
+        type: Date,
+        default: null
+    },
+    approvedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
     // Membership fields
     isMember: {
         type: Boolean,

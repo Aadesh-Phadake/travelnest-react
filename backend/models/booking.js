@@ -30,6 +30,11 @@ const bookingSchema = new Schema({
         type: Number,
         required: true
     },
+    // Platform commission (service fee) charged per booking
+    platformCommission: {
+        type: Number,
+        default: 0
+    },
     roomAllocation: {
         single: {
             type: Number,

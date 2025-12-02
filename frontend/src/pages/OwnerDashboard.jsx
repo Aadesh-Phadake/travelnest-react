@@ -7,7 +7,8 @@ import {
     Home, 
     DollarSign, 
     ArrowLeft, 
-    Building2
+    Building2,
+    Clock
 } from 'lucide-react';
 import {
     LineChart,
@@ -47,6 +48,13 @@ const OwnerDashboard = () => {
             return;
         }
 
+        // Check if manager is approved
+        if (user.role === 'manager' && !user.isApproved) {
+            setAccessError('Your manager account is currently pending approval from an administrator. You will be able to access the dashboard once approved.');
+            setLoading(false);
+            return;
+        }
+
         fetchDashboardData();
     }, [user, navigate]);
 
@@ -67,7 +75,8 @@ const OwnerDashboard = () => {
                 toast.error("Please login to access the dashboard");
                 navigate('/login');
             } else if (error.response?.status === 403) {
-                setAccessError('Access denied.');
+                // Use the specific message from backend if available
+                setAccessError(error.response?.data?.message || 'Access denied.');
             } else {
                 toast.error("Failed to load dashboard data");
             }
@@ -76,8 +85,12 @@ const OwnerDashboard = () => {
         }
     };
 
+    // Filter properties
+    const activeProperties = properties.filter(p => !p.status || p.status === 'approved');
+    const pendingProperties = properties.filter(p => p.status === 'pending');
+
     // Calculate statistics
-    const totalProperties = properties.length;
+    const totalProperties = activeProperties.length;
     
     // Today's date for calculations
     const today = new Date();
@@ -103,7 +116,7 @@ const OwnerDashboard = () => {
     const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
 
     // Total Rooms across all properties
-    const totalRooms = properties.reduce((sum, p) => {
+    const totalRooms = activeProperties.reduce((sum, p) => {
         const rooms = p.rooms || 
             ((p.roomTypes?.single || 0) + (p.roomTypes?.double || 0) + (p.roomTypes?.triple || 0));
         return sum + rooms;
@@ -296,9 +309,28 @@ const OwnerDashboard = () => {
                         >
                             <span className="flex items-center gap-2">
                                 <Home className="w-4 h-4" />
-                                My Properties
+                                Active Listings
                             </span>
                             {activeTab === 'properties' && (
+                                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>
+                            )}
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('pending')}
+                            className={`pb-4 px-6 text-sm font-medium transition-all relative ${
+                                activeTab === 'pending' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                        >
+                            <span className="flex items-center gap-2">
+                                <Clock className="w-4 h-4" />
+                                Pending Approval
+                                {pendingProperties.length > 0 && (
+                                    <span className="bg-yellow-100 text-yellow-800 text-xs py-0.5 px-2 rounded-full">
+                                        {pendingProperties.length}
+                                    </span>
+                                )}
+                            </span>
+                            {activeTab === 'pending' && (
                                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>
                             )}
                         </button>
@@ -311,6 +343,7 @@ const OwnerDashboard = () => {
                                 <thead>
                                     <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                         <th className="pb-4 pr-6">Title</th>
+                                        <th className="pb-4 pr-6">Status</th>
                                         <th className="pb-4 pr-6">Location</th>
                                         <th className="pb-4 pr-6">Type</th>
                                         <th className="pb-4 pr-6">Price</th>
@@ -320,8 +353,8 @@ const OwnerDashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {properties.length > 0 ? (
-                                        properties.map(property => (
+                                    {activeProperties.length > 0 ? (
+                                        activeProperties.map(property => (
                                             <tr key={property._id} className="hover:bg-gray-50 transition">
                                                 <td className="py-4 pr-6">
                                                     <div className="flex items-center gap-3">
@@ -338,13 +371,20 @@ const OwnerDashboard = () => {
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        <Link 
-                                                            to={`/listings/${property._id}`}
-                                                            className="text-gray-900 font-medium hover:text-primary transition"
-                                                        >
-                                                            {property.title}
-                                                        </Link>
+                                                        <div className="flex flex-col">
+                                                            <Link 
+                                                                to={`/listings/${property._id}`}
+                                                                className="text-gray-900 font-medium hover:text-primary transition"
+                                                            >
+                                                                {property.title}
+                                                            </Link>
+                                                        </div>
                                                     </div>
+                                                </td>
+                                                <td className="py-4 pr-6">
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                        Approved
+                                                    </span>
                                                 </td>
                                                 <td className="py-4 pr-6 text-gray-600">
                                                     {property.location}, {property.country}
@@ -372,8 +412,79 @@ const OwnerDashboard = () => {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan="7" className="py-8 text-center text-gray-500">
-                                                No properties found. <Link to="/create-listing" className="text-primary hover:underline">Add your first property</Link>
+                                            <td colSpan="8" className="py-8 text-center text-gray-500">
+                                                No active properties found. <Link to="/create-listing" className="text-primary hover:underline">Add your first property</Link>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {/* Pending Properties Table */}
+                    {activeTab === 'pending' && (
+                        <div className="mt-6 overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                        <th className="pb-4 pr-6">Title</th>
+                                        <th className="pb-4 pr-6">Status</th>
+                                        <th className="pb-4 pr-6">Location</th>
+                                        <th className="pb-4 pr-6">Price</th>
+                                        <th className="pb-4 pr-6">Submitted</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {pendingProperties.length > 0 ? (
+                                        pendingProperties.map(property => (
+                                            <tr key={property._id} className="hover:bg-gray-50 transition">
+                                                <td className="py-4 pr-6">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 opacity-75">
+                                                            {property.images?.[0] ? (
+                                                                <img 
+                                                                    src={property.images[0]} 
+                                                                    alt={property.title}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                    <Building2 className="w-5 h-5 text-gray-400" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-gray-900 font-medium">
+                                                                {property.title}
+                                                            </span>
+                                                            <span className="text-[10px] text-gray-500">Awaiting admin approval</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-4 pr-6">
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                        Pending Approval
+                                                    </span>
+                                                </td>
+                                                <td className="py-4 pr-6 text-gray-600">
+                                                    {property.location}, {property.country}
+                                                </td>
+                                                <td className="py-4 pr-6 text-gray-900 font-medium">
+                                                    ₹{property.price?.toLocaleString('en-IN')}
+                                                </td>
+                                                <td className="py-4 text-gray-500">
+                                                    {property.createdAt 
+                                                        ? new Date(property.createdAt).toLocaleDateString('en-GB')
+                                                        : 'Just now'
+                                                    }
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="5" className="py-8 text-center text-gray-500">
+                                                No pending approvals.
                                             </td>
                                         </tr>
                                     )}

@@ -27,6 +27,12 @@ module.exports.index = async (req, res) => {
             }
         }
 
+        // Only show approved listings (treat missing status as approved for older data)
+        filter.$or = [
+            { status: { $exists: false } },
+            { status: 'approved' }
+        ];
+
         // Fetch and Filter
         let listings = await Listing.find(filter).populate('reviews');
 
@@ -71,6 +77,14 @@ module.exports.create = async (req, res, next) => {
         
         const listing = new Listing(req.body);
         listing.owner = req.user._id;
+        
+        // Listings created by admins are auto-approved.
+        // Everyone else (managers, etc.) must be approved by admin.
+        if (req.user.role === 'admin') {
+            listing.status = 'approved';
+        } else {
+            listing.status = 'pending';
+        }
         await listing.save();
         
         console.log('Listing created successfully:', listing._id, 'License:', listing.hotelLicense ? 'Saved' : 'Not saved');

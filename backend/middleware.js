@@ -95,7 +95,49 @@ module.exports.requireRole = (allowedRoles) => {
 };
 
 module.exports.requireTraveller = module.exports.requireRole(['traveller']);
-module.exports.requireManager = module.exports.requireRole(['manager']);
+
+// Managers must also be approved by admin
+module.exports.requireManager = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({ message: 'You must be logged in' });
+    }
+    if (req.user.role !== 'manager') {
+        return res.status(403).json({ message: 'Access denied. Manager account required.' });
+    }
+    if (req.user.isApproved === false) {
+        return res.status(403).json({ message: 'Your manager account is pending admin approval.' });
+    }
+    next();
+};
+
 module.exports.requireAdmin = module.exports.requireRole(['admin']);
-module.exports.requireManagerOrAdmin = module.exports.requireRole(['manager', 'admin']);
-module.exports.requireTravellerOrManager = module.exports.requireRole(['traveller', 'manager']);
+
+module.exports.requireManagerOrAdmin = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({ message: 'You must be logged in' });
+    }
+    if (req.user.role === 'admin') {
+        return next();
+    }
+    if (req.user.role === 'manager') {
+        if (req.user.isApproved === false) {
+            return res.status(403).json({ message: 'Your manager account is pending admin approval.' });
+        }
+        return next();
+    }
+    return res.status(403).json({ message: 'Access denied. Manager or admin account required.' });
+};
+
+module.exports.requireTravellerOrManager = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({ message: 'You must be logged in' });
+    }
+    if (req.user.role === 'traveller') return next();
+    if (req.user.role === 'manager') {
+        if (req.user.isApproved === false) {
+            return res.status(403).json({ message: 'Your manager account is pending admin approval.' });
+        }
+        return next();
+    }
+    return res.status(403).json({ message: 'Access denied. Traveller or manager account required.' });
+};

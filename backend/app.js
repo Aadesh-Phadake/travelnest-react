@@ -20,6 +20,7 @@ const taxiRouter = require('./routes/taxi');
 const adminApiRouter = require('./routes/adminApi');
 const managerRouter = require('./routes/manager');
 const uploadRouter = require('./routes/upload');
+const contactRouter = require('./routes/contact');
 
 const PORT = process.env.PORT || 8080;
 const MONGO_URL = process.env.MONGO_URL;
@@ -83,6 +84,7 @@ app.use('/', taxiRouter);
 app.use('/api/admin', adminApiRouter);
 app.use('/manager', managerRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api/contact', contactRouter);
 
 // Root route
 app.get('/', (req, res) => {

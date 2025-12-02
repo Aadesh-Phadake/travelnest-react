@@ -34,6 +34,7 @@ router.get('/api/hotels', isLoggedIn, requireManager, wrapAsync(async (req, res)
                 country: hotel.country,
                 price: hotel.price,
                 images: hotel.images,
+                status: hotel.status,
                 rooms: calculatedRooms,
                 roomTypes: hotel.roomTypes,
                 createdAt: hotel.createdAt,

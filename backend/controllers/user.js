@@ -18,7 +18,14 @@ module.exports.signup = async (req, res) => {
             return res.status(400).json({ message: 'Invalid account type.' });
         }
         
-        let user = new User({ username, email, role });
+        const isManager = role === 'manager';
+        // Managers must be approved by an admin before accessing manager features
+        let user = new User({ 
+            username, 
+            email, 
+            role,
+            isApproved: !isManager
+        });
         let registeredUser = await User.register(user, password);
         
         req.login(registeredUser, err => {
@@ -122,7 +129,7 @@ module.exports.createBooking = async (req, res) => {
         const checkOutDate = parseDate(checkOut);
 
         let nights = 0;
-        let serviceFee = 0;
+        let serviceFee = 0; // platform commission
         let totalAmount = 0;
 
         const numGuests = parseInt(guests) || 1;
@@ -148,7 +155,8 @@ module.exports.createBooking = async (req, res) => {
             checkIn,
             checkOut,
             guests: parseInt(guests) || 1,
-            totalAmount: totalAmount || 0
+            totalAmount: totalAmount || 0,
+            platformCommission: serviceFee || 0
         });
 
         await booking.save();

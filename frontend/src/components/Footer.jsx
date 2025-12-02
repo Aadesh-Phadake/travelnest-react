@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Facebook, Instagram, Twitter, Linkedin, Heart } from 'lucide-react'; // Make sure to npm install lucide-react
 
 const Footer = () => {
@@ -24,9 +25,9 @@ const Footer = () => {
                 <div>
                     <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
                     <ul className="space-y-2 text-gray-400 dark:text-gray-500 text-sm">
-                        <li><a href="/listings" className="hover:text-white">All Hotels</a></li>
-                        <li><a href="/about" className="hover:text-white">About Us</a></li>
-                        <li><a href="/contact" className="hover:text-white">Contact</a></li>
+                        <li><Link to="/listings" className="hover:text-white">All Hotels</Link></li>
+                        <li><Link to="/about" className="hover:text-white">About Us</Link></li>
+                        <li><Link to="/contact" className="hover:text-white">Contact</Link></li>
                     </ul>
                 </div>
 
@@ -34,10 +35,10 @@ const Footer = () => {
                 <div>
                     <h4 className="text-lg font-semibold mb-4">Support</h4>
                     <ul className="space-y-2 text-gray-400 dark:text-gray-500 text-sm">
-                        <li><a href="/help" className="hover:text-white">Help Center</a></li>
-                        <li><a href="/faq" className="hover:text-white">FAQ</a></li>
-                        <li><a href="/terms" className="hover:text-white">Terms of Service</a></li>
-                        <li><a href="/privacy" className="hover:text-white">Privacy Policy</a></li>
+                        <li><Link to="/help" className="hover:text-white">Help Center</Link></li>
+                        <li><Link to="/faq" className="hover:text-white">FAQ</Link></li>
+                        <li><Link to="/terms" className="hover:text-white">Terms of Service</Link></li>
+                        <li><Link to="/privacy" className="hover:text-white">Privacy Policy</Link></li>
                     </ul>
                 </div>
 
