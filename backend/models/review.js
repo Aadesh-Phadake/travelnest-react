@@ -10,6 +10,9 @@ const ReviewSchema = new schema({
         min: 1,
         max: 5,
     },
+    photos: [{
+        type: String // URLs of uploaded photos
+    }],
     createdAt: {
         type: Date,
         default: Date.now

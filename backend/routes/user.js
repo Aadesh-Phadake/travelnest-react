@@ -6,6 +6,9 @@ const wrapAsync = require('../utils/wrapAsync');
 // REMOVED saveRedirectUrl from here
 const { isLoggedIn, requireTraveller } = require('../middleware');
 const userController = require('../controllers/user');
+const multer = require('multer');
+const { storage } = require('../utils/multer');
+const upload = multer({ storage });
 
 // Signup - POST only (React handles the form UI)
 router.route('/signup')
@@ -21,7 +24,12 @@ router.get('/logout', userController.logout);
 
 // Profile Data
 // Note: You must update userController.renderProfile to return JSON data instead of res.render
-router.get('/profile', isLoggedIn, requireTraveller, wrapAsync(userController.renderProfile));
+router.get('/profile', isLoggedIn, wrapAsync(userController.renderProfile));
+router.put('/profile/update', isLoggedIn, upload.fields([{ name: 'profilePhoto', maxCount: 1 }, { name: 'documents', maxCount: 10 }]), wrapAsync(userController.updateProfile));
+router.put('/profile/change-password', isLoggedIn, wrapAsync(userController.changePassword));
+
+// Check current user authentication
+router.get('/me', isLoggedIn, wrapAsync(userController.getCurrentUser));
 
 router.post('/membership/activate', isLoggedIn, wrapAsync(userController.activateMembership));
 

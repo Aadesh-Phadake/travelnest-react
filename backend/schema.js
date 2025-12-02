@@ -20,3 +20,7 @@ module.exports.reviewSchema=joi.object({
     comment:joi.string().required(),
     rating:joi.number().required().min(1).max(5)
 }).required();
+
+module.exports.redeemPointsSchema=joi.object({
+    points:joi.number().required().min(20).max(10000)
+}).required();

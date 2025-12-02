@@ -1,5 +1,6 @@
 const Listing = require('../models/listing');
 const Review = require('../models/review');
+const Booking = require('../models/booking');
 
 module.exports.postReview = async (req, res) => {
     try {
@@ -8,21 +9,33 @@ module.exports.postReview = async (req, res) => {
             return res.status(404).json({ message: "Listing not found" });
         }
 
+
+
+        // Handle photo uploads
+        let photoUrls = [];
+        if (req.files && req.files.length > 0) {
+            const { uploadMultipleToCloudinary } = require('../utils/cloudinary');
+            photoUrls = await uploadMultipleToCloudinary(req.files, 'reviews');
+        }
+
         // Create the review
-        let review = new Review(req.body);
+        let review = new Review({
+            ...req.body,
+            photos: photoUrls
+        });
         review.author = req.user._id;
-        
+
         listing.reviews.push(review);
-        
+
         await review.save();
         await listing.save();
 
         // Populate the author details so React can display "By [Username]" immediately
         await review.populate('author', 'username');
 
-        res.status(201).json({ 
-            message: 'Review posted successfully!', 
-            review: review 
+        res.status(201).json({
+            message: 'Review posted successfully!',
+            review: review
         });
     } catch (e) {
         res.status(500).json({ message: "Error posting review", error: e.message });
