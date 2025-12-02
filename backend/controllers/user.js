@@ -69,13 +69,95 @@ module.exports.renderProfile = async (req, res) => {
         const bookings = await Booking.find({ user: req.user._id })
             .populate('listing')
             .sort('-createdAt');
-            
-        res.status(200).json({ 
+
+        res.status(200).json({
             user: req.user,
-            bookings 
+            bookings
         });
     } catch (e) {
         res.status(500).json({ message: "Error fetching profile" });
+    }
+};
+
+// ✅ Update user profile
+module.exports.updateProfile = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const updates = {};
+
+        // Handle different fields based on user role
+        if (req.user.role === 'traveller') {
+            if (req.body.name) updates.name = req.body.name;
+            if (req.body.email) updates.email = req.body.email;
+            if (req.body.phone) updates.phone = req.body.phone;
+            if (req.body.address) updates.address = req.body.address;
+            if (req.body.travelPreferences) updates.travelPreferences = req.body.travelPreferences;
+        } else if (req.user.role === 'manager') {
+            if (req.body.name) updates.name = req.body.name;
+            if (req.body.email) updates.email = req.body.email;
+            if (req.body.hotelName) updates.hotelName = req.body.hotelName;
+            if (req.body.hotelAddress) updates.hotelAddress = req.body.hotelAddress;
+            if (req.body.phone) updates.phone = req.body.phone;
+        } else if (req.user.role === 'admin') {
+            if (req.body.name) updates.name = req.body.name;
+            if (req.body.email) updates.email = req.body.email;
+            if (req.body.systemAccess) updates.systemAccess = req.body.systemAccess;
+        }
+
+        // Handle file uploads
+        if (req.files && req.files.profilePhoto && req.files.profilePhoto[0]) {
+            updates.profilePhoto = req.files.profilePhoto[0].path;
+        }
+
+        // Handle documents for managers
+        if (req.user.role === 'manager') {
+            let documents = [];
+            if (req.body.existingDocuments) {
+                documents = JSON.parse(req.body.existingDocuments);
+            }
+            if (req.files && req.files.documents) {
+                documents = documents.concat(req.files.documents.map(file => file.path));
+            }
+            updates.documents = documents;
+        }
+
+        const user = await User.findByIdAndUpdate(userId, updates, { new: true });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json({
+            message: 'Profile updated successfully',
+            user
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating profile', error: error.message });
+    }
+};
+
+// ✅ Change user password
+module.exports.changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const user = await User.findById(req.user._id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Verify current password
+        const isValidPassword = await user.authenticate(currentPassword);
+        if (!isValidPassword) {
+            return res.status(400).json({ message: 'Current password is incorrect' });
+        }
+
+        // Update password
+        await user.setPassword(newPassword);
+        await user.save();
+
+        res.status(200).json({ message: 'Password changed successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error changing password', error: error.message });
     }
 };
 

@@ -141,3 +141,26 @@ module.exports.requireTravellerOrManager = (req, res, next) => {
     }
     return res.status(403).json({ message: 'Access denied. Traveller or manager account required.' });
 };
+
+// Check if user has booked the listing before allowing review
+module.exports.hasBookedListing = async (req, res, next) => {
+    try {
+        const Booking = require('./models/booking');
+        const hasBooking = await Booking.findOne({
+            user: req.user._id,
+            listing: req.params.id,
+            // Optional: Check if booking is completed/past
+            // checkOut: { $lt: new Date() }
+        });
+
+        if (!hasBooking) {
+            return res.status(403).json({
+                message: "You can only review hotels you have booked"
+            });
+        }
+
+        next();
+    } catch (error) {
+        return res.status(500).json({ message: "Error checking booking status" });
+    }
+};
