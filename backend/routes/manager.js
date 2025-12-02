@@ -1,14 +1,17 @@
+//imported 
 const express = require('express');
 const router = express.Router();
 const { isLoggedIn, requireManager } = require('../middleware');
 const Listing = require('../models/listing');
 const Booking = require('../models/booking');
+const ContactMessage = require('../models/contactMessage');
 const wrapAsync = require('../utils/wrapAsync');
 
 // Manager Dashboard
 router.get('/dashboard', isLoggedIn, requireManager, wrapAsync(async (req, res) => {
     res.render('manager/dashboard', { currentUser: req.user });
 }));
+
 
 // API Routes for Manager Dashboard (AJAX)
 router.get('/api/hotels', isLoggedIn, requireManager, wrapAsync(async (req, res) => {
@@ -123,4 +126,19 @@ router.get('/api/stats', isLoggedIn, requireManager, wrapAsync(async (req, res) 
     }
 }));
 
+// API to get messages/complaints for manager
+router.get('/api/messages', isLoggedIn, requireManager, wrapAsync(async (req, res) => {
+    try {
+        const messages = await ContactMessage.find({ recipient: req.user._id })
+            .populate('booking', 'checkIn checkOut totalAmount')
+            .populate('user', 'username email')
+            .sort('-createdAt');
+        
+        res.json({ success: true, messages });
+    } catch (error) {
+        console.error('Error fetching manager messages:', error);
+        res.status(500).json({ error: 'Failed to fetch messages' });
+    }
+}));
+//exported
 module.exports = router;
