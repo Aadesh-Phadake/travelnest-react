@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { deleteHotel } from '../../redux/adminSlice';
+import { useAdminHotels } from '../../hooks/admin/useAdminHotels';
 import {
   Search,
   Trash2,
@@ -12,8 +11,7 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 
 const HotelsTable = () => {
-  const dispatch = useDispatch();
-  const { hotels } = useSelector((state) => state.admin);
+  const { hotels, removeHotel } = useAdminHotels();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -28,12 +26,6 @@ const HotelsTable = () => {
   const totalPages = Math.ceil(filteredHotels.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentHotels = filteredHotels.slice(startIndex, startIndex + itemsPerPage);
-
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this hotel? This action cannot be undone.')) {
-      dispatch(deleteHotel(id));
-    }
-  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -118,7 +110,7 @@ const HotelsTable = () => {
                           <ExternalLink className="w-4 h-4" />
                         </Link>
                         <button
-                          onClick={() => handleDelete(hotel._id)}
+                          onClick={() => removeHotel(hotel._id)}
                           className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-medium text-red-500 border border-red-300 hover:bg-red-50 dark:hover:bg-red-900/30"
                         >
                           <Trash2 className="w-3 h-3" /> Remove
@@ -148,14 +140,14 @@ const HotelsTable = () => {
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
               >
                 Previous
               </button>
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
               >
                 Next
               </button>

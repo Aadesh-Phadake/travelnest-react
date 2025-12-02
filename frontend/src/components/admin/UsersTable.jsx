@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { deleteUser, toggleMembership } from '../../redux/adminSlice';
+import { useAdminUsers } from '../../hooks/admin/useAdminUsers';
 import {
   Search,
   Trash2,
@@ -11,8 +10,7 @@ import {
 } from 'lucide-react';
 
 const UsersTable = () => {
-  const dispatch = useDispatch();
-  const { users } = useSelector((state) => state.admin);
+  const { users, removeUser, updateMembership } = useAdminUsers();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -27,16 +25,6 @@ const UsersTable = () => {
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
-
-  const handleDelete = (id) => {
-    if (window.confirm('Delete this user and all their bookings?')) {
-      dispatch(deleteUser(id));
-    }
-  };
-
-  const handleToggleMembership = (id, isMember) => {
-    dispatch(toggleMembership({ id, isMember }));
-  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -112,13 +100,13 @@ const UsersTable = () => {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => handleToggleMembership(user._id, user.isMember)}
+                          onClick={() => updateMembership(user._id, user.isMember)}
                           className="px-3 py-1 rounded-full text-xs font-medium border border-primary/30 text-primary hover:bg-primary/5 transition"
                         >
                           {user.isMember ? 'Remove' : 'Make member'}
                         </button>
                         <button
-                          onClick={() => handleDelete(user._id)}
+                          onClick={() => removeUser(user._id)}
                           className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                           title="Delete User"
                         >
@@ -149,14 +137,14 @@ const UsersTable = () => {
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
               >
                 Previous
               </button>
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
               >
                 Next
               </button>

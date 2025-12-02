@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { deleteOwner } from '../../redux/adminSlice';
+import { useAdminOwners } from '../../hooks/admin/useAdminOwners';
 import {
   Search,
   Trash2,
@@ -9,8 +8,7 @@ import {
 } from 'lucide-react';
 
 const OwnersTable = () => {
-  const dispatch = useDispatch();
-  const { owners } = useSelector((state) => state.admin);
+  const { owners, removeOwner } = useAdminOwners();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -25,12 +23,6 @@ const OwnersTable = () => {
   const totalPages = Math.ceil(filteredOwners.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentOwners = filteredOwners.slice(startIndex, startIndex + itemsPerPage);
-
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this owner? This will also delete all their hotels.')) {
-      dispatch(deleteOwner(id));
-    }
-  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -103,7 +95,7 @@ const OwnersTable = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
-                        onClick={() => handleDelete(owner.ownerId)}
+                        onClick={() => removeOwner(owner.ownerId)}
                         className="p-1.5 rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
                         title="Delete Manager & Their Hotels"
                       >
@@ -133,14 +125,14 @@ const OwnersTable = () => {
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
               >
                 Previous
               </button>
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-700 dark:text-gray-300"
               >
                 Next
               </button>

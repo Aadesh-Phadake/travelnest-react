@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { fetchAdminData } from '../redux/adminSlice';
-import { Loader2 } from 'lucide-react';
 
 // Import Sub-components
 import DashboardOverview from '../components/admin/DashboardOverview';
@@ -14,9 +12,7 @@ import ContactMessages from '../components/admin/ContactMessages';
 
 const AdminDashboard = () => {
   const { user } = useSelector((state) => state.auth);
-  const { loading: adminLoading } = useSelector((state) => state.admin);
   
-  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const [tab, setTab] = useState('overview'); // overview | users | hotels | owners | approvals | messages
@@ -31,10 +27,7 @@ const AdminDashboard = () => {
     if (!isAdmin) {
       return;
     }
-
-    // Fetch Redux Data (Lists)
-    dispatch(fetchAdminData());
-  }, [dispatch, user, isAdmin, navigate]);
+  }, [user, isAdmin, navigate]);
 
   if (!user) return null;
 
@@ -57,18 +50,6 @@ const AdminDashboard = () => {
           >
             Go back home
           </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (adminLoading && tab !== 'overview') {
-    // Only show full page loader if not on overview (overview handles its own loading for charts)
-    return (
-      <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="flex flex-col items-center gap-3 text-gray-500">
-          <Loader2 className="w-8 h-8 animate-spin" />
-          <p>Loading admin dashboard...</p>
         </div>
       </div>
     );

@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import api from '../../api/axios';
+import React from 'react';
+import { useAdminDashboard } from '../../hooks/admin/useAdminDashboard';
 import {
   DollarSign,
   BarChart3,
@@ -20,7 +19,6 @@ import {
   BarChart,
   Bar,
 } from 'recharts';
-import toast from 'react-hot-toast';
 
 const PeriodPills = ({ value, onChange }) => {
   const options = [
@@ -49,76 +47,22 @@ const PeriodPills = ({ value, onChange }) => {
 };
 
 const DashboardOverview = ({ setTab }) => {
-  const { 
-    users, 
-    hotels, 
-    owners, 
-    pendingManagers, 
-    pendingHotels 
-  } = useSelector((state) => state.admin);
-
-  const [loading, setLoading] = useState(true);
-  const [revenuePeriod, setRevenuePeriod] = useState('month');
-  const [revenueSeries, setRevenueSeries] = useState([]);
-  const [bookingsPeriod, setBookingsPeriod] = useState('month');
-  const [bookingsSeries, setBookingsSeries] = useState([]);
-  const [topHotelsSeries, setTopHotelsSeries] = useState([]);
-  const [commissionSummary, setCommissionSummary] = useState({
-    totalCommission: 0,
-    avgCommissionPerBooking: 0,
-  });
-
-  // Fetch static data (Top Hotels, Commission)
-  useEffect(() => {
-    const fetchStaticData = async () => {
-      try {
-        setLoading(true);
-        const [topHotelsRes, commissionSummaryRes] = await Promise.all([
-          api.get('/api/admin/charts/top-hotels'),
-          api.get('/api/admin/commission/summary'),
-        ]);
-
-        setTopHotelsSeries(topHotelsRes.data?.data || []);
-        setCommissionSummary(commissionSummaryRes.data?.summary || {
-          totalCommission: 0,
-          avgCommissionPerBooking: 0,
-        });
-      } catch (error) {
-        console.error('Admin static data fetch error', error);
-        toast.error('Failed to load dashboard data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStaticData();
-  }, []);
-
-  // Fetch Revenue Chart
-  useEffect(() => {
-    const fetchRevenue = async () => {
-      try {
-        const res = await api.get('/api/admin/charts/revenue', { params: { period: revenuePeriod } });
-        setRevenueSeries(res.data?.data || []);
-      } catch (error) {
-        console.error('Revenue chart fetch error', error);
-      }
-    };
-    fetchRevenue();
-  }, [revenuePeriod]);
-
-  // Fetch Bookings Trend
-  useEffect(() => {
-    const fetchBookingsTrend = async () => {
-      try {
-        const res = await api.get('/api/admin/charts/bookings-trend', { params: { period: bookingsPeriod } });
-        setBookingsSeries(res.data?.data || []);
-      } catch (error) {
-        console.error('Bookings trend fetch error', error);
-      }
-    };
-    fetchBookingsTrend();
-  }, [bookingsPeriod]);
+  const {
+    users,
+    hotels,
+    owners,
+    pendingManagers,
+    pendingHotels,
+    loading,
+    revenuePeriod,
+    setRevenuePeriod,
+    revenueSeries,
+    bookingsPeriod,
+    setBookingsPeriod,
+    bookingsSeries,
+    topHotelsSeries,
+    commissionSummary
+  } = useAdminDashboard();
 
   // Calculations
   const totalHotels = hotels.length;

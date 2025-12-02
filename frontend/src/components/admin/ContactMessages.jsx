@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
+import { useAdminMessages } from '../../hooks/admin/useAdminMessages';
 import {
   MessageSquare,
   Mail,
@@ -9,7 +9,7 @@ import {
 import { format } from 'date-fns';
 
 const ContactMessages = () => {
-  const { contactMessages } = useSelector((state) => state.admin);
+  const { messages: contactMessages } = useAdminMessages();
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">

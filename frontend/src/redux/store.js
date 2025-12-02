@@ -2,12 +2,20 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import authReducer from './authSlice';
-import adminReducer from './adminSlice';
+import usersReducer from './admin/usersSlice';
+import hotelsReducer from './admin/hotelsSlice';
+import ownersReducer from './admin/ownersSlice';
+import approvalsReducer from './admin/approvalsSlice';
+import messagesReducer from './admin/messagesSlice';
 
 // 1. Create a root reducer that combines all slices
 const rootReducer = combineReducers({
     auth: authReducer,
-    admin: adminReducer,
+    users: usersReducer,
+    hotels: hotelsReducer,
+    owners: ownersReducer,
+    approvals: approvalsReducer,
+    messages: messagesReducer,
 });
 
 // 2. Configure persistence

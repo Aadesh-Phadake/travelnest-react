@@ -1,11 +1,5 @@
 import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { 
-  approveManager, 
-  rejectManager, 
-  approveHotel, 
-  rejectHotel 
-} from '../../redux/adminSlice';
+import { useAdminApprovals } from '../../hooks/admin/useAdminApprovals';
 import {
   Check,
   X,
@@ -18,33 +12,14 @@ import {
 import { Link } from 'react-router-dom';
 
 const PendingApprovals = () => {
-  const dispatch = useDispatch();
-  const { pendingManagers, pendingHotels } = useSelector((state) => state.admin);
-
-  const handleApproveManager = (id) => {
-    if (window.confirm('Approve this user as a Manager?')) {
-      dispatch(approveManager(id));
-    }
-  };
-
-  const handleRejectManager = (id) => {
-    if (window.confirm('Reject this manager request?')) {
-      dispatch(rejectManager(id));
-    }
-  };
-
-  const handleApproveHotel = (id) => {
-    if (window.confirm('Approve this hotel listing?')) {
-      dispatch(approveHotel(id));
-    }
-  };
-
-  const handleRejectHotel = (id) => {
-    const reason = window.prompt('Please provide a reason for rejection:', 'Does not meet platform guidelines');
-    if (reason !== null) {
-      dispatch(rejectHotel({ id, reason }));
-    }
-  };
+  const { 
+    pendingManagers, 
+    pendingHotels, 
+    confirmApproveManager, 
+    confirmRejectManager, 
+    confirmApproveHotel, 
+    confirmRejectHotel 
+  } = useAdminApprovals();
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -84,13 +59,13 @@ const PendingApprovals = () => {
                 
                 <div className="flex gap-2 mt-auto pt-2">
                   <button
-                    onClick={() => handleApproveManager(manager._id)}
+                    onClick={() => confirmApproveManager(manager._id)}
                     className="flex-1 flex items-center justify-center gap-2 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 rounded-xl text-sm font-medium transition-colors"
                   >
                     <Check className="w-4 h-4" /> Approve
                   </button>
                   <button
-                    onClick={() => handleRejectManager(manager._id)}
+                    onClick={() => confirmRejectManager(manager._id)}
                     className="flex-1 flex items-center justify-center gap-2 py-2 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 rounded-xl text-sm font-medium transition-colors"
                   >
                     <X className="w-4 h-4" /> Reject
@@ -161,13 +136,13 @@ const PendingApprovals = () => {
                     </Link>
                     <div className="flex-1"></div>
                     <button
-                      onClick={() => handleRejectHotel(hotel._id)}
+                      onClick={() => confirmRejectHotel(hotel._id)}
                       className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                     >
                       <X className="w-4 h-4" /> Reject
                     </button>
                     <button
-                      onClick={() => handleApproveHotel(hotel._id)}
+                      onClick={() => confirmApproveHotel(hotel._id)}
                       className="px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-200 dark:shadow-none rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                     >
                       <Check className="w-4 h-4" /> Approve Listing
