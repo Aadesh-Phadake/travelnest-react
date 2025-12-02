@@ -140,5 +140,46 @@ router.get('/api/messages', isLoggedIn, requireManager, wrapAsync(async (req, re
         res.status(500).json({ error: 'Failed to fetch messages' });
     }
 }));
+
+// API to cancel booking and process refund (Owner cancellation)
+router.post('/api/bookings/:id/cancel', isLoggedIn, requireManager, wrapAsync(async (req, res) => {
+    try {
+        const bookingId = req.params.id;
+        
+        // Verify the booking belongs to one of manager's hotels
+        const booking = await Booking.findById(bookingId).populate('listing');
+        if (!booking) {
+            return res.status(404).json({ success: false, error: 'Booking not found' });
+        }
+        
+        // Check if this booking is for one of the manager's hotels
+        const managerHotels = await Listing.find({ owner: req.user._id }, '_id');
+        const hotelIds = managerHotels.map(h => h._id.toString());
+        
+        const bookingListingId = booking.listing?._id?.toString() || booking.listing?.toString();
+        if (!hotelIds.includes(bookingListingId)) {
+            return res.status(403).json({ success: false, error: 'You can only cancel bookings for your own hotels' });
+        }
+        
+        // Process the refund
+        const { processRefund } = require('../controllers/paymentController');
+        const result = await processRefund(bookingId, 'owner');
+        
+        if (result.success) {
+            res.json({ 
+                success: true, 
+                message: 'Booking cancelled and refund initiated',
+                booking: result.booking,
+                refundId: result.refundId
+            });
+        } else {
+            res.status(400).json({ success: false, error: result.message });
+        }
+    } catch (error) {
+        console.error('Error cancelling booking:', error);
+        res.status(500).json({ success: false, error: 'Failed to cancel booking' });
+    }
+}));
+
 //exported
 module.exports = router;
