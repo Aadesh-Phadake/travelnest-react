@@ -72,7 +72,24 @@ const ListingSchema = new schema({
             default: 0,
             min: 0
         }
+    },
+    // Approval status for admin moderation
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'approved'
+    },
+    approvedAt: {
+        type: Date,
+        default: null
+    },
+    approvedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
     }
+}, {
+    timestamps: true
 });
 
 ListingSchema.post('findOneAndDelete', async function (listing) {

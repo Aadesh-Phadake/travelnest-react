@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import { Plus, X, Save, Loader, ArrowLeft, Upload, FileText, Image as ImageIcon } from 'lucide-react';
@@ -7,6 +8,7 @@ import { Plus, X, Save, Loader, ArrowLeft, Upload, FileText, Image as ImageIcon 
 const ListingForm = () => {
     const { id } = useParams(); // If ID exists, we are in EDIT mode
     const navigate = useNavigate();
+    const { user } = useSelector((state) => state.auth);
     const isEditMode = Boolean(id);
 
     const [loading, setLoading] = useState(false);
@@ -354,7 +356,11 @@ const ListingForm = () => {
                 navigate(`/listings/${id}`);
             } else {
                 await api.post('/listings', submitData);
-                toast.success("Listing created successfully!");
+                if (user?.role === 'admin') {
+                    toast.success("Listing created successfully!");
+                } else {
+                    toast.success("Listing request sent for approval!");
+                }
                 navigate('/listings');
             }
         } catch (error) {

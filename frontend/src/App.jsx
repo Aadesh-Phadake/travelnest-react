@@ -17,6 +17,13 @@ import Checkout from './pages/Checkout';
 import TaxiBooking from './pages/TaxiBooking';
 import ListingForm from './pages/ListingForm';
 import OwnerDashboard from './pages/OwnerDashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import HelpCenter from './pages/HelpCenter';
+import FAQ from './pages/FAQ';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
 
 function App() {
   return (
@@ -40,6 +47,15 @@ function App() {
             <Route path="/create-listing" element={<ListingForm />} />
             <Route path="/edit-listing/:id" element={<ListingForm />} />
             <Route path="/owner-dashboard" element={<OwnerDashboard />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            
+            {/* Static Pages */}
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/help" element={<HelpCenter />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
           </Routes>
         </div>
         
