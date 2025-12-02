@@ -1,15 +1,25 @@
 //imported required modules 
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchManagerHotels, fetchManagerBookings, fetchManagerChats, fetchUnreadCount, appendManagerMessage } from '../redux/dashboardSlice';
 import toast from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+// redux moved above
 import { 
     Home, 
     DollarSign, 
     ArrowLeft, 
     Building2,
-    Clock
+    Clock,
+    Calendar,
+    Users,
+    XCircle,
+    CheckCircle,
+    RefreshCw,
+    MessageCircle,
+    Send,
+    X
 } from 'lucide-react';
 import {
     LineChart,
@@ -24,13 +34,25 @@ import {
 //owner dashboard
 const OwnerDashboard = () => {
     const navigate = useNavigate();
+    const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
-    const [properties, setProperties] = useState([]);
-    //bookings
-    const [bookings, setBookings] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { properties, bookings, chats: chatsFromStore, unreadCount, loading: dashLoading } = useSelector((state) => state.dashboard);
+    const [propertiesLocal, setPropertiesLocal] = useState([]);
+    const [localChats, setLocalChats] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('properties');
     const [accessError, setAccessError] = useState(null);
+    
+    // Selected hotel for bookings tab
+    const [selectedHotelId, setSelectedHotelId] = useState('all');
+    
+    // Chat/Messages state
+    const [chats, setChats] = useState([]);
+    const [selectedChat, setSelectedChat] = useState(null);
+    const [chatMessages, setChatMessages] = useState([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [chatLoading, setChatLoading] = useState(false);
+    const [sendingMessage, setSendingMessage] = useState(false);
     
     // Revenue filter states
     const [fromDate, setFromDate] = useState('');
@@ -58,39 +80,113 @@ const OwnerDashboard = () => {
             return;
         }
 
-        fetchDashboardData();
-    }, [user, navigate]);
-    //fetching the dashboard data 
-    const fetchDashboardData = async () => {
-        try {
-            setLoading(true);
-            
-            // Fetch manager's hotels
-            const hotelsRes = await api.get('/manager/api/hotels');
-            setProperties(hotelsRes.data?.hotels || []);
+        // Fetch dashboard data via Redux thunks
+        dispatch(fetchManagerHotels());
+        dispatch(fetchManagerBookings());
+        dispatch(fetchManagerChats());
+        dispatch(fetchUnreadCount());
+    }, [user, navigate, dispatch]);
 
-            // Fetch bookings for manager's hotels
-            const bookingsRes = await api.get('/manager/api/bookings');
-            setBookings(bookingsRes.data?.bookings || []);
-        } catch (error) {
-            console.error('Dashboard fetch error:', error);
-            if (error.response?.status === 401) {
-                toast.error("Please login to access the dashboard");
-                navigate('/login');
-            } else if (error.response?.status === 403) {
-                // Use the specific message from backend if available
-                setAccessError(error.response?.data?.message || 'Access denied.');
-            } else {
-                toast.error("Failed to load dashboard data");
-            }
-        } finally {
-            setLoading(false);
+    // Mirror properties to local state where existing UI expects local array (non-breaking)
+    useEffect(() => {
+        setPropertiesLocal(properties || []);
+    }, [properties]);
+
+    useEffect(() => {
+        setLocalChats(chatsFromStore || []);
+    }, [chatsFromStore]);
+
+    // Legacy error/toast handling left intact
+    // Legacy fetchDashboardData removed; using Redux thunks above
+
+    // Chat Functions
+    const selectChat = async (chat) => {
+        try {
+            // Load full chat and mark traveler messages as read on the server
+            const res = await api.get(`/api/chat/manager/${chat._id}`);
+            const updated = res.data?.chat || chat;
+            setSelectedChat(updated);
+            setChatMessages(updated.messages || []);
+            // Reflect read state in the chats list
+            setLocalChats(prev => prev.map(c => c._id === updated._id ? { ...c, messages: updated.messages } : c));
+        } catch (err) {
+            console.log('Error loading chat:', err);
+            setSelectedChat(chat);
+            setChatMessages(chat.messages || []);
         }
     };
 
+    const closeChat = () => {
+        setSelectedChat(null);
+        setChatMessages([]);
+        setNewMessage('');
+    };
+
+    const sendMessage = async () => {
+        if (!newMessage.trim() || !selectedChat) return;
+        
+        setSendingMessage(true);
+        try {
+            // Manager sends message to manager endpoint
+            const res = await api.post(`/api/chat/manager/${selectedChat._id}/message`, {
+                message: newMessage.trim()
+            });
+            const sent = res.data?.message;
+            if (sent) {
+                setChatMessages(prev => [...prev, sent]);
+                setNewMessage('');
+                // Update chats list preview
+                setLocalChats(prev => prev.map(c => 
+                    c._id === selectedChat._id 
+                        ? { 
+                            ...c, 
+                            messages: [...(c.messages || []), sent],
+                            lastMessage: sent.message,
+                            lastMessageTime: new Date().toISOString()
+                        }
+                        : c
+                ));
+            }
+        } catch (error) {
+            toast.error('Failed to send message');
+        } finally {
+            setSendingMessage(false);
+        }
+    };
+
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    };
+
+    // Count unread chats
+    const unreadChats = chats.filter(chat => 
+        chat.messages?.some(m => m.senderRole === 'traveler' && !m.isRead)
+    ).length;
+
+    // Get bookings grouped by property
+    const getBookingsByProperty = () => {
+        const grouped = {};
+        properties.forEach(property => {
+            grouped[property._id] = {
+                property,
+                bookings: bookings.filter(b => {
+                    const listingId = b.listing?._id || b.listing;
+                    return String(listingId) === String(property._id);
+                }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            };
+        });
+        return grouped;
+    };
+
     // Filter properties
-    const activeProperties = properties.filter(p => !p.status || p.status === 'approved');
-    const pendingProperties = properties.filter(p => p.status === 'pending');
+    const activeProperties = propertiesLocal.filter(p => !p.status || p.status === 'approved');
+    const pendingProperties = propertiesLocal.filter(p => p.status === 'pending');
+    
+    // Get active (non-cancelled) bookings for revenue calculations
+    const activeBookings = bookings.filter(b => b.status !== 'cancelled');
 
     // Calculate statistics
     const totalProperties = activeProperties.length;
@@ -99,8 +195,8 @@ const OwnerDashboard = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Revenue Today
-    const revenueToday = bookings.filter(b => {
+    // Revenue Today (only from active bookings)
+    const revenueToday = activeBookings.filter(b => {
         const bookingDate = new Date(b.createdAt);
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
@@ -109,14 +205,14 @@ const OwnerDashboard = () => {
         return bookingDate >= todayStart && bookingDate <= todayEnd;
     }).reduce((sum, b) => sum + (b.totalAmount || 0), 0);
 
-    // Revenue This Month
+    // Revenue This Month (only from active bookings)
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const revenueMonth = bookings.filter(b => {
+    const revenueMonth = activeBookings.filter(b => {
         return new Date(b.createdAt) >= startOfMonth;
     }).reduce((sum, b) => sum + (b.totalAmount || 0), 0);
 
-    // Total Revenue
-    const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+    // Total Revenue (only from active bookings)
+    const totalRevenue = activeBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
 
     // Total Rooms across all properties
     const totalRooms = activeProperties.reduce((sum, p) => {
@@ -125,8 +221,8 @@ const OwnerDashboard = () => {
         return sum + rooms;
     }, 0);
     
-    // Occupied Rooms (active bookings where checkIn <= today && checkOut > today)
-    const occupiedRooms = bookings.filter(b => {
+    // Occupied Rooms (active bookings where checkIn <= today && checkOut > today, excluding cancelled)
+    const occupiedRooms = activeBookings.filter(b => {
         const checkIn = new Date(b.checkIn);
         const checkOut = new Date(b.checkOut);
         checkIn.setHours(0, 0, 0, 0);
@@ -143,12 +239,12 @@ const OwnerDashboard = () => {
     // Occupancy Rate
     const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
 
-    // Get occupied rooms for a specific property
+    // Get occupied rooms for a specific property (excluding cancelled bookings)
     const getOccupiedRoomsForProperty = (propertyId) => {
         const now = new Date();
         now.setHours(0, 0, 0, 0);
         
-        return bookings.filter(b => {
+        return activeBookings.filter(b => {
             // Get listing ID (handles both populated and non-populated)
             const listingId = b.listing?._id || b.listing;
             if (String(listingId) !== String(propertyId)) return false;
@@ -166,7 +262,7 @@ const OwnerDashboard = () => {
         }, 0);
     };
 
-    // Apply date filter for revenue
+    // Apply date filter for revenue (only active bookings)
     const handleApplyFilter = () => {
         if (!fromDate || !toDate) {
             toast.error("Please select both dates");
@@ -183,7 +279,7 @@ const OwnerDashboard = () => {
             return;
         }
 
-        const filtered = bookings.filter(b => {
+        const filtered = activeBookings.filter(b => {
             const bookingDate = new Date(b.createdAt);
             return bookingDate >= from && bookingDate <= to;
         }).reduce((sum, b) => sum + (b.totalAmount || 0), 0);
@@ -198,7 +294,7 @@ const OwnerDashboard = () => {
         setFilteredRevenue(null);
     };
 
-    // Chart data - Last 7 days revenue
+    // Chart data - Last 7 days revenue (only active bookings)
     const getChartData = () => {
         const data = [];
         
@@ -216,7 +312,7 @@ const OwnerDashboard = () => {
             const day = String(date.getDate()).padStart(2, '0');
             const dateStr = `${year}-${month}-${day}`;
 
-            const dayRevenue = bookings.filter(b => {
+            const dayRevenue = activeBookings.filter(b => {
                 const bookingDate = new Date(b.createdAt);
                 return bookingDate >= date && bookingDate <= nextDate;
             }).reduce((sum, b) => sum + (b.totalAmount || 0), 0);
@@ -229,7 +325,7 @@ const OwnerDashboard = () => {
     const chartData = getChartData();
 
     // Loading state
-    if (loading) {
+    if (dashLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -334,6 +430,44 @@ const OwnerDashboard = () => {
                                 )}
                             </span>
                             {activeTab === 'pending' && (
+                                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>
+                            )}
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('bookings')}
+                            className={`pb-4 px-6 text-sm font-medium transition-all relative ${
+                                activeTab === 'bookings' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                        >
+                            <span className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4" />
+                                Bookings
+                                {bookings.length > 0 && (
+                                    <span className="bg-blue-100 text-blue-800 text-xs py-0.5 px-2 rounded-full">
+                                        {bookings.length}
+                                    </span>
+                                )}
+                            </span>
+                            {activeTab === 'bookings' && (
+                                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>
+                            )}
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('messages')}
+                            className={`pb-4 px-6 text-sm font-medium transition-all relative ${
+                                activeTab === 'messages' ? 'text-primary' : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                        >
+                            <span className="flex items-center gap-2">
+                                <MessageCircle className="w-4 h-4" />
+                                Messages
+                                {unreadCount > 0 && (
+                                    <span className="bg-red-500 text-white text-xs py-0.5 px-2 rounded-full">
+                                        {unreadCount}
+                                    </span>
+                                )}
+                            </span>
+                            {activeTab === 'messages' && (
                                 <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full"></span>
                             )}
                         </button>
@@ -493,6 +627,343 @@ const OwnerDashboard = () => {
                                     )}
                                 </tbody>
                             </table>
+                        </div>
+                    )}
+
+                    {/* Bookings Tab - With Hotel Selector */}
+                    {activeTab === 'bookings' && (
+                        <div className="mt-6">
+                            {properties.length > 0 ? (
+                                <>
+                                    {/* Hotel Selector Dropdown */}
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <label className="text-sm font-medium text-gray-700">Select Hotel:</label>
+                                            <select
+                                                value={selectedHotelId}
+                                                onChange={(e) => setSelectedHotelId(e.target.value)}
+                                                className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 font-medium focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none min-w-[250px]"
+                                            >
+                                                <option value="all">All Hotels ({bookings.length} bookings)</option>
+                                                {properties.map(property => {
+                                                    const count = bookings.filter(b => {
+                                                        const listingId = b.listing?._id || b.listing;
+                                                        return String(listingId) === String(property._id);
+                                                    }).length;
+                                                    return (
+                                                        <option key={property._id} value={property._id}>
+                                                            {property.title} ({count} bookings)
+                                                        </option>
+                                                    );
+                                                })}
+                                            </select>
+                                        </div>
+                                        
+                                        {/* Summary Stats */}
+                                        <div className="flex items-center gap-4 text-sm">
+                                            <span className="text-gray-500">
+                                                Showing: <span className="font-semibold text-gray-900">
+                                                    {selectedHotelId === 'all' 
+                                                        ? bookings.length 
+                                                        : bookings.filter(b => {
+                                                            const listingId = b.listing?._id || b.listing;
+                                                            return String(listingId) === String(selectedHotelId);
+                                                        }).length
+                                                    } bookings
+                                                </span>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Selected Hotel Info Card */}
+                                    {selectedHotelId !== 'all' && (
+                                        <div className="bg-gradient-to-r from-primary/5 to-orange-50 rounded-xl p-4 mb-6 border border-primary/10">
+                                            {(() => {
+                                                const selectedProperty = properties.find(p => p._id === selectedHotelId);
+                                                if (!selectedProperty) return null;
+                                                return (
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
+                                                            {selectedProperty.images?.[0] ? (
+                                                                <img src={selectedProperty.images[0]} alt={selectedProperty.title} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center">
+                                                                    <Building2 className="w-6 h-6 text-gray-400" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-bold text-gray-900 text-lg">{selectedProperty.title}</h4>
+                                                            <p className="text-sm text-gray-500">{selectedProperty.location}, {selectedProperty.country}</p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    )}
+
+                                    {/* Bookings List */}
+                                    <div className="space-y-3">
+                                        {(() => {
+                                            const filteredBookings = selectedHotelId === 'all' 
+                                                ? bookings 
+                                                : bookings.filter(b => {
+                                                    const listingId = b.listing?._id || b.listing;
+                                                    return String(listingId) === String(selectedHotelId);
+                                                });
+                                            
+                                            const sortedBookings = [...filteredBookings].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+                                            if (sortedBookings.length === 0) {
+                                                return (
+                                                    <div className="text-center py-12 text-gray-500">
+                                                        <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                                                        <p>No bookings found for this hotel.</p>
+                                                    </div>
+                                                );
+                                            }
+
+                                            return sortedBookings.map(booking => {
+                                                // Get property info for "All Hotels" view
+                                                const bookingProperty = properties.find(p => {
+                                                    const listingId = booking.listing?._id || booking.listing;
+                                                    return String(p._id) === String(listingId);
+                                                });
+
+                                                return (
+                                                    <div 
+                                                        key={booking._id} 
+                                                        className={`bg-white rounded-xl p-4 border shadow-sm ${
+                                                            booking.status === 'cancelled' 
+                                                                ? 'border-red-200 bg-red-50/30' 
+                                                                : 'border-gray-200 hover:border-gray-300'
+                                                        } transition`}
+                                                    >
+                                                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                                            {/* Guest Info + Hotel (for All view) */}
+                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                <div className="w-11 h-11 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold flex-shrink-0">
+                                                                    {booking.user?.username?.charAt(0)?.toUpperCase() || 'G'}
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <p className="font-semibold text-gray-900 truncate">
+                                                                        {booking.user?.username || 'Guest'}
+                                                                    </p>
+                                                                    <p className="text-xs text-gray-500 truncate">{booking.user?.email}</p>
+                                                                    {/* Show hotel name in "All Hotels" view */}
+                                                                    {selectedHotelId === 'all' && bookingProperty && (
+                                                                        <p className="text-xs text-primary font-medium mt-0.5 truncate">
+                                                                            🏨 {bookingProperty.title}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Booking Details */}
+                                                            <div className="flex flex-wrap items-center gap-3 text-sm">
+                                                                <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg text-gray-600">
+                                                                    <Calendar className="w-4 h-4" />
+                                                                    <span>{new Date(booking.checkIn).toLocaleDateString('en-GB')} - {new Date(booking.checkOut).toLocaleDateString('en-GB')}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg text-gray-600">
+                                                                    <Users className="w-4 h-4" />
+                                                                    <span>{booking.guests} guests</span>
+                                                                </div>
+                                                                <div className="font-bold text-gray-900 text-base">
+                                                                    ₹{booking.totalAmount?.toLocaleString('en-IN')}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Status Badges & Actions */}
+                                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                                {/* Booking Status Badge */}
+                                                                {booking.status === 'cancelled' ? (
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                                                                        <XCircle className="w-3 h-3" />
+                                                                        Cancelled
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                                                        <CheckCircle className="w-3 h-3" />
+                                                                        Confirmed
+                                                                    </span>
+                                                                )}
+
+                                                                {/* Payment Status Badge */}
+                                                                {booking.paymentStatus === 'refunded' ? (
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                                                                        <RefreshCw className="w-3 h-3" />
+                                                                        Refunded
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                                                        <DollarSign className="w-3 h-3" />
+                                                                        Paid
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="text-center py-12 text-gray-500">
+                                    <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                                    <p>No properties found. Add a property to start receiving bookings.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Messages Tab Content */}
+                    {activeTab === 'messages' && (
+                        <div className="mt-6">
+                            <div className="flex gap-4 h-[500px]">
+                                {/* Chat List */}
+                                <div className="w-1/3 border border-gray-200 rounded-xl overflow-hidden bg-white">
+                                    <div className="bg-gradient-to-r from-primary to-primary/80 text-white p-4">
+                                        <h3 className="font-bold">Guest Messages</h3>
+                                        <p className="text-white/70 text-sm">{chats.length} conversation{chats.length !== 1 ? 's' : ''}</p>
+                                    </div>
+                                    <div className="overflow-y-auto h-[calc(100%-70px)]">
+                                        {localChats.length > 0 ? (
+                                            localChats.map(chat => {
+                                                const hasUnread = chat.messages?.some(m => m.senderRole === 'traveler' && !m.isRead);
+                                                const lastMessage = chat.messages?.[chat.messages.length - 1];
+                                                const chatProperty = properties.find(p => String(p._id) === String(chat.listing?._id || chat.listing));
+                                                
+                                                return (
+                                                    <div
+                                                        key={chat._id}
+                                                        onClick={() => selectChat(chat)}
+                                                        className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition ${
+                                                            selectedChat?._id === chat._id ? 'bg-blue-50' : ''
+                                                        } ${hasUnread ? 'bg-yellow-50' : ''}`}
+                                                    >
+                                                        <div className="flex items-start gap-3">
+                                                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold flex-shrink-0">
+                                                                {chat.traveler?.username?.charAt(0)?.toUpperCase() || 'G'}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center justify-between">
+                                                                    <p className="font-semibold text-gray-900 truncate">
+                                                                        {chat.traveler?.username || 'Guest'}
+                                                                    </p>
+                                                                    {hasUnread && (
+                                                                        <span className="w-2.5 h-2.5 bg-red-500 rounded-full flex-shrink-0"></span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-xs text-primary truncate">
+                                                                    {chatProperty?.title || 'Property'}
+                                                                </p>
+                                                                {lastMessage && (
+                                                                    <p className="text-xs text-gray-500 truncate mt-1">
+                                                                        {lastMessage.senderRole === 'manager' ? 'You: ' : ''}{lastMessage.message}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center h-full text-gray-400 p-6">
+                                                <MessageCircle className="w-12 h-12 mb-3 opacity-50" />
+                                                <p className="text-sm text-center">No messages yet</p>
+                                                <p className="text-xs text-center mt-1">Guest inquiries will appear here</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Chat Window */}
+                                <div className="flex-1 border border-gray-200 rounded-xl overflow-hidden bg-white flex flex-col">
+                                    {selectedChat ? (
+                                        <>
+                                            {/* Chat Header */}
+                                            <div className="bg-gradient-to-r from-primary to-primary/80 text-white p-4 flex items-center justify-between">
+                                                <div>
+                                                    <h3 className="font-bold">{selectedChat.traveler?.username || 'Guest'}</h3>
+                                                    <p className="text-white/70 text-sm">
+                                                        {propertiesLocal.find(p => String(p._id) === String(selectedChat.listing?._id || selectedChat.listing))?.title || 'Property'}
+                                                    </p>
+                                                </div>
+                                                <button 
+                                                    onClick={closeChat}
+                                                    className="p-2 hover:bg-white/20 rounded-full transition"
+                                                >
+                                                    <X className="w-5 h-5" />
+                                                </button>
+                                            </div>
+
+                                            {/* Messages */}
+                                            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+                                                {chatMessages.length === 0 ? (
+                                                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                                                        <MessageCircle className="w-12 h-12 mb-3 opacity-50" />
+                                                        <p className="text-sm">No messages yet</p>
+                                                    </div>
+                                                ) : (
+                                                    chatMessages.map((msg, index) => (
+                                                        <div 
+                                                            key={index}
+                                                            className={`flex ${msg.senderRole === 'manager' ? 'justify-end' : 'justify-start'}`}
+                                                        >
+                                                            <div className={`max-w-[75%] rounded-2xl px-4 py-2 ${
+                                                                msg.senderRole === 'manager'
+                                                                    ? 'bg-primary text-white rounded-br-md'
+                                                                    : 'bg-white text-gray-800 rounded-bl-md shadow-sm'
+                                                            }`}>
+                                                                <p className="text-sm">{msg.message}</p>
+                                                                <p className={`text-[10px] mt-1 ${
+                                                                    msg.senderRole === 'manager' ? 'text-white/70' : 'text-gray-400'
+                                                                }`}>
+                                                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+
+                                            {/* Input */}
+                                            <div className="p-4 bg-white border-t">
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={newMessage}
+                                                        onChange={(e) => setNewMessage(e.target.value)}
+                                                        onKeyPress={handleKeyPress}
+                                                        placeholder="Type a reply..."
+                                                        className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                                        disabled={sendingMessage}
+                                                    />
+                                                    <button
+                                                        onClick={sendMessage}
+                                                        disabled={!newMessage.trim() || sendingMessage}
+                                                        className="p-2.5 bg-primary text-white rounded-full hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    >
+                                                        {sendingMessage ? (
+                                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                        ) : (
+                                                            <Send className="w-5 h-5" />
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                                            <MessageCircle className="w-16 h-16 mb-4 opacity-30" />
+                                            <p className="text-lg font-medium text-gray-500">Select a conversation</p>
+                                            <p className="text-sm">Choose a guest message from the list to reply</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
