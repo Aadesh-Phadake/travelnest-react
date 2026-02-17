@@ -573,14 +573,18 @@ const Profile = () => {
                                     </div>
                                     <button
                                         onClick={() => {
-                                            const points = parseInt(redeemPoints);
+                                            const points = parseInt(redeemPoints, 10);
                                             const discount = Math.floor(points / 20);
-                                            if (points >= 20 && discount > 0) {
+                                            if (!isNaN(points) && points >= 20 && discount > 0) {
                                                 handleRedeemPoints(points, discount);
                                                 setRedeemPoints('');
                                             }
                                         }}
-                                        disabled={!redeemPoints || parseInt(redeemPoints) < 20 || parseInt(redeemPoints) > (walletData?.rewardPoints || 0)}
+                                        disabled={(() => {
+                                            const points = parseInt(redeemPoints, 10);
+                                            const maxPoints = walletData?.rewardPoints || 0;
+                                            return !redeemPoints || isNaN(points) || points < 20 || points > maxPoints;
+                                        })()}
                                         className="w-full mt-4 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors"
                                     >
                                         Redeem Points

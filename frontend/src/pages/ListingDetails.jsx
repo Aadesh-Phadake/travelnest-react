@@ -236,8 +236,8 @@ const ListingDetails = () => {
                     </div>
 
                     {isOwner && (
-                        <div className="flex gap-4 p-6 bg-gray-50 rounded-xl border border-gray-100">
-                            <button onClick={() => navigate(`/edit-listing/${id}`)} className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-black transition font-medium">
+                        <div className="flex gap-4  bg-gray-900 rounded-xl ">
+                            <button onClick={() => navigate(`/edit-listing/${id}`)} className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg hover:bg-yellow-800 transition font-medium">
                                 <Edit className="w-4 h-4" /> Edit Listing
                             </button>
                             <button onClick={handleDeleteListing} className="flex items-center gap-2 px-5 py-2.5 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition font-medium">
@@ -267,7 +267,7 @@ const ListingDetails = () => {
                     <div className="border-t border-gray-100 pt-10">
                         <div className="flex items-center gap-3 mb-8">
                             <Star className="w-7 h-7 fill-primary text-primary" />
-                            <h3 className="text-2xl font-bold text-gray-900">
+                            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-300">
                                 {listing.reviews?.length > 0 
                                     ? `${(listing.reviews.reduce((acc, r) => acc + r.rating, 0) / listing.reviews.length).toFixed(1)} · ${listing.reviews.length} Reviews` 
                                     : "No reviews yet"}
@@ -276,7 +276,7 @@ const ListingDetails = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
                             {listing.reviews?.map(review => (
-                                <div key={review._id} className="bg-gray-50 p-6 rounded-2xl">
+                                <div key={review._id} className="bg-gray-50 border p-6 rounded-2xl">
                                     <div className="flex justify-between items-start mb-3">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center font-bold text-gray-500 shadow-sm">
