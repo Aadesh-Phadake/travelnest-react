@@ -7,6 +7,9 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const MongoStore = require('connect-mongo');
 const cors = require('cors'); // IMPORT CORS
+const morgan = require('morgan');
+const fs = require('fs');
+const path = require('path');
 
 // Models
 const User = require('./models/user');
@@ -29,7 +32,10 @@ const PORT = process.env.PORT || 8080;
 const MONGO_URL = process.env.MONGO_URL;
 
 // Middleware setup
+// Create write stream for Morgan logs
+const accessLogStream = fs.createWriteStream(path.join(__dirname, 'logs.txt'), { flags: 'a' });
 // 1. Allow requests from your React App (Assuming it runs on port 5173 or 3000)
+app.use(morgan('combined', { stream: accessLogStream }));
 app.use(cors({
     origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'], // Support multiple ports
     credentials: true // Essential for maintaining sessions/cookies with React
