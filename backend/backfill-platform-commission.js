@@ -74,7 +74,7 @@ async function main() {
         }
       }
 
-      const serviceFee = isActiveMemberAtBooking ? 0 : Math.round(baseAmount * 0.1);
+      const serviceFee = isActiveMemberAtBooking ? 0 : Math.round(baseAmount * 0.05);
 
       booking.platformCommission = serviceFee;
       await booking.save();
