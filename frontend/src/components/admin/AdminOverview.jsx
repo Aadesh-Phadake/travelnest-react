@@ -80,6 +80,17 @@ const AdminOverview = ({ setTab }) => {
   const platformRevenue = totalCommission + ownerCommission;
 
   const totalPending = pendingManagers.length + pendingHotels.length;
+  const topUsers = [...users]
+    .sort((a, b) => {
+      if ((b.totalBookings || 0) !== (a.totalBookings || 0)) {
+        return (b.totalBookings || 0) - (a.totalBookings || 0);
+      }
+      if ((b.totalSpent || 0) !== (a.totalSpent || 0)) {
+        return (b.totalSpent || 0) - (a.totalSpent || 0);
+      }
+      return (a.username || '').localeCompare(b.username || '');
+    })
+    .slice(0, 5);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -89,7 +100,7 @@ const AdminOverview = ({ setTab }) => {
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Net Revenue</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Platform Revenue</p>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                 ₹{platformRevenue.toLocaleString('en-IN')}
               </h3>
@@ -99,9 +110,7 @@ const AdminOverview = ({ setTab }) => {
             </div>
           </div>
           <div className="mt-4 flex items-center text-xs text-gray-500">
-            <span className="text-emerald-600 font-medium flex items-center gap-1">
-              +15% <span className="text-gray-400">service fee</span>
-            </span>
+            5% service fee (non-members) + 15% owner-share component
           </div>
         </div>
 
@@ -109,7 +118,7 @@ const AdminOverview = ({ setTab }) => {
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Gross Bookings</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Gross Booking Value</p>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
                 ₹{grossRevenue.toLocaleString('en-IN')}
               </h3>
@@ -118,9 +127,7 @@ const AdminOverview = ({ setTab }) => {
               <BarChart3 className="w-5 h-5" />
             </div>
           </div>
-          <div className="mt-4 text-xs text-gray-500">
-            Total value of all bookings
-          </div>
+          <div className="mt-4 text-xs text-gray-500">Total guest spend before platform share split</div>
         </div>
 
         {/* Total Bookings */}
@@ -172,7 +179,7 @@ const AdminOverview = ({ setTab }) => {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Revenue Analytics</h2>
-                <p className="text-sm text-gray-500">Platform earnings vs Total transaction volume</p>
+                <p className="text-sm text-gray-500">Platform revenue (5% fee + 15% owner share) vs gross booking value</p>
               </div>
               <PeriodPills value={revenuePeriod} onChange={setRevenuePeriod} />
             </div>
@@ -209,7 +216,7 @@ const AdminOverview = ({ setTab }) => {
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     formatter={(value, name) => [
                       `₹${value.toLocaleString('en-IN')}`,
-                      name === 'platformRevenue' ? 'Net Revenue' : 'Gross Volume',
+                      name === 'platformRevenue' ? 'Platform Revenue' : 'Gross Booking Value',
                     ]}
                   />
                   <Line
@@ -271,10 +278,10 @@ const AdminOverview = ({ setTab }) => {
           </section>
         </div>
 
-        {/* Right Column: Top Hotels & Quick Actions (1/3 width) */}
+        {/* Right Column: Top Hotels, Top Users & Quick Stats (1/3 width) */}
         <div className="space-y-6">
           {/* Top Performing Hotels */}
-          <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm h-full">
+          <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
             <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Top Performers</h2>
             <div className="space-y-6">
               {topHotelsSeries.length === 0 && (
@@ -310,6 +317,47 @@ const AdminOverview = ({ setTab }) => {
               className="w-full mt-6 py-2 text-sm text-primary font-medium hover:bg-primary/5 rounded-lg transition-colors"
             >
               View all hotels
+            </button>
+          </section>
+
+          {/* Top Users */}
+          <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Top Users</h2>
+            <div className="space-y-4">
+              {topUsers.length === 0 && (
+                <p className="text-sm text-gray-500 text-center py-2">No user data available yet.</p>
+              )}
+              {topUsers.map((u, i) => (
+                <div key={u._id || `${u.username}-${i}`} className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                    i === 0 ? 'bg-yellow-100 text-yellow-700' :
+                    i === 1 ? 'bg-gray-100 text-gray-700' :
+                    i === 2 ? 'bg-orange-100 text-orange-700' : 'bg-slate-50 text-slate-600'
+                  }`}>
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {u.username || 'User'}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {u.email || '—'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">{u.totalBookings || 0} bookings</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      ₹{(u.totalSpent || 0).toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setTab('users')}
+              className="w-full mt-6 py-2 text-sm text-primary font-medium hover:bg-primary/5 rounded-lg transition-colors"
+            >
+              View all users
             </button>
           </section>
 

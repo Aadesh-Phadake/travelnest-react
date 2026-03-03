@@ -247,7 +247,7 @@ module.exports.renderPayment = async (req, res) => {
                 }
                 
                 const isActiveMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
-                serviceFee = isActiveMember ? 0 : Math.round(baseAmount * 0.1);
+                serviceFee = isActiveMember ? 0 : Math.round(baseAmount * 0.05);
                 totalAmount = baseAmount + serviceFee;
             }
         }

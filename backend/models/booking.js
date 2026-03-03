@@ -12,6 +12,18 @@ const bookingSchema = new Schema({
         ref: 'Listing',
         required: true
     },
+    listingTitle: {
+        type: String,
+        default: ''
+    },
+    listingLocation: {
+        type: String,
+        default: ''
+    },
+    listingCountry: {
+        type: String,
+        default: ''
+    },
     checkIn: {
         type: String,
         required: true
