@@ -18,7 +18,7 @@ const AdminDashboard = () => {
 
   const [tab, setTab] = useState('overview'); // overview | users | hotels | approvals | owners | messages
 
-  const isAdmin = user && (user.role === 'admin' || user.username === 'TravelNest');
+  const isAdmin = user && (user.role === 'admin' || user.role === 'staff' || user.username === 'TravelNest');
 
   useEffect(() => {
     if (!user) {
@@ -79,7 +79,7 @@ const AdminDashboard = () => {
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <p className="text-xs font-semibold text-primary uppercase tracking-[0.2em] mb-1">
-              Super Admin
+              {user?.role === 'staff' ? 'Staff Operations' : 'Super Admin'}
             </p>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-50">
               Control Center
@@ -106,71 +106,65 @@ const AdminDashboard = () => {
         <div className="border-b border-gray-200 dark:border-gray-700 flex gap-4 text-sm font-medium overflow-x-auto">
           <button
             onClick={() => setTab('overview')}
-            className={`pb-3 px-1 -mb-px border-b-2 transition whitespace-nowrap ${
-              tab === 'overview'
+            className={`pb-3 px-1 -mb-px border-b-2 transition whitespace-nowrap ${tab === 'overview'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
-            }`}
+              }`}
           >
             Overview
           </button>
           <button
             onClick={() => setTab('users')}
-            className={`pb-3 px-1 -mb-px border-b-2 transition whitespace-nowrap ${
-              tab === 'users'
+            className={`pb-3 px-1 -mb-px border-b-2 transition whitespace-nowrap ${tab === 'users'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
-            }`}
+              }`}
           >
             Users
           </button>
           <button
             onClick={() => setTab('hotels')}
-            className={`pb-3 px-1 -mb-px border-b-2 transition whitespace-nowrap ${
-              tab === 'hotels'
+            className={`pb-3 px-1 -mb-px border-b-2 transition whitespace-nowrap ${tab === 'hotels'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
-            }`}
+              }`}
           >
             Hotels
           </button>
           <button
             onClick={() => setTab('owners')}
-            className={`pb-3 px-1 -mb-px border-b-2 transition whitespace-nowrap ${
-              tab === 'owners'
+            className={`pb-3 px-1 -mb-px border-b-2 transition whitespace-nowrap ${tab === 'owners'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
-            }`}
+              }`}
           >
             Owners
           </button>
           <button
             onClick={() => setTab('approvals')}
-            className={`pb-3 px-1 -mb-px border-b-2 transition whitespace-nowrap ${
-              tab === 'approvals'
+            className={`pb-3 px-1 -mb-px border-b-2 transition whitespace-nowrap ${tab === 'approvals'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
-            }`}
+              }`}
           >
             Approvals
           </button>
           <button
             onClick={() => setTab('messages')}
-            className={`pb-3 px-1 -mb-px border-b-2 transition whitespace-nowrap ${
-              tab === 'messages'
+            className={`pb-3 px-1 -mb-px border-b-2 transition whitespace-nowrap ${tab === 'messages'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
-            }`}
+              }`}
           >
             Messages
           </button>
         </div>
 
         {tab === 'overview' && <AdminOverview setTab={setTab} />}
-        {tab === 'users' && <AdminUsers />}
-        {tab === 'hotels' && <AdminHotels />}
-        {tab === 'owners' && <AdminOwners />}
-        {tab === 'approvals' && <AdminApprovals />}
+        {tab === 'users' && <AdminUsers userRole={user?.role} />}
+        {tab === 'hotels' && <AdminHotels userRole={user?.role} />}
+        {tab === 'owners' && <AdminOwners userRole={user?.role} />}
+        {tab === 'approvals' && <AdminApprovals userRole={user?.role} />}
         {tab === 'messages' && <AdminMessages />}
       </div>
     </div>

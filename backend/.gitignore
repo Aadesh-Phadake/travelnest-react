@@ -119,3 +119,6 @@ Thumbs.db
 # Uploads directory (temporary files before Cloudinary upload)
 uploads/
 
+# Scripts with hardcoded credentials
+create-admin-user.js
+create-staff-user.js

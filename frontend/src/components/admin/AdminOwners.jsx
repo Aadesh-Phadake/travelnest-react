@@ -2,7 +2,7 @@ import React from 'react';
 import { Trash2 } from 'lucide-react';
 import { useAdminOwners } from '../../hooks/admin/useAdminOwners';
 
-const AdminOwners = () => {
+const AdminOwners = ({ userRole }) => {
   const { owners, removeOwner } = useAdminOwners();
 
   const handleDeleteOwner = (id) => {
@@ -37,7 +37,7 @@ const AdminOwners = () => {
               <th className="px-4 py-2 font-semibold">Service Fee</th>
               <th className="px-4 py-2 font-semibold">15% Owner Share</th>
               <th className="px-4 py-2 font-semibold">Platform Revenue</th>
-              <th className="px-4 py-2 font-semibold text-right">Actions</th>
+              {userRole !== 'admin' && <th className="px-4 py-2 font-semibold text-right">Actions</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -69,14 +69,16 @@ const AdminOwners = () => {
                 <td className="px-4 py-2 text-gray-700 dark:text-gray-200">
                   ₹{(o.platformRevenue || 0).toLocaleString('en-IN')}
                 </td>
-                <td className="px-4 py-2 text-right">
-                  <button
-                    onClick={() => handleDeleteOwner(o.ownerId)}
-                    className="p-1.5 rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </td>
+                {userRole !== 'admin' && (
+                  <td className="px-4 py-2 text-right">
+                    <button
+                      onClick={() => handleDeleteOwner(o.ownerId)}
+                      className="p-1.5 rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
             {owners.length === 0 && (
