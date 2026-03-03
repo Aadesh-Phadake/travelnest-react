@@ -33,7 +33,10 @@ function requireStaff(req, res, next) {
 // Get all users with statistics
 router.get('/users', isLoggedIn, requireAdmin, async (req, res) => {
     try {
-        const users = await User.find({ username: { $ne: "TravelNest" } })
+        const users = await User.find({
+            username: { $ne: "TravelNest" },
+            role: 'traveller'
+        })
             .sort('-createdAt');
 
         // Add booking statistics for each user
@@ -57,10 +60,110 @@ router.get('/users', isLoggedIn, requireAdmin, async (req, res) => {
             };
         }));
 
+        usersWithStats.sort((a, b) => {
+            if ((b.totalBookings || 0) !== (a.totalBookings || 0)) {
+                return (b.totalBookings || 0) - (a.totalBookings || 0);
+            }
+            if ((b.totalSpent || 0) !== (a.totalSpent || 0)) {
+                return (b.totalSpent || 0) - (a.totalSpent || 0);
+            }
+            return (a.username || '').localeCompare(b.username || '');
+        });
+
         res.status(200).json({ success: true, users: usersWithStats });
     } catch (error) {
         console.error('Error fetching users:', error);
         res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+// Get one user's booking history grouped by hotel
+router.get('/users/:id/bookings', isLoggedIn, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const user = await User.findById(id).select('username email');
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+
+        const bookings = await Booking.find({ user: id })
+            .sort('-createdAt');
+
+        const listingIds = Array.from(new Set(
+            bookings
+                .map((booking) => booking.listing ? String(booking.listing) : null)
+                .filter(Boolean)
+        ));
+
+        const listings = listingIds.length
+            ? await Listing.find({ _id: { $in: listingIds } }).select('title location country')
+            : [];
+
+        const listingById = listings.reduce((acc, listing) => {
+            acc[String(listing._id)] = listing;
+            return acc;
+        }, {});
+
+        const groupedMap = bookings.reduce((acc, booking) => {
+            const hotelId = booking.listing ? String(booking.listing) : `missing-${String(booking._id)}`;
+            const listing = listingById[hotelId] || null;
+            const isDeletedListing = !listing;
+
+            if (!acc[hotelId]) {
+                const shortId = hotelId.length > 6 ? hotelId.slice(-6) : hotelId;
+                const baseHotelName = listing?.title || booking.listingTitle || `Hotel ${shortId}`;
+                acc[hotelId] = {
+                    hotelId,
+                    hotelName: isDeletedListing ? `${baseHotelName} (Deleted)` : baseHotelName,
+                    location: listing?.location || booking.listingLocation || '',
+                    country: listing?.country || booking.listingCountry || '',
+                    isDeleted: isDeletedListing,
+                    totalBookings: 0,
+                    totalSpent: 0,
+                    bookings: []
+                };
+            }
+
+            acc[hotelId].totalBookings += 1;
+            acc[hotelId].totalSpent += booking.totalAmount || 0;
+            acc[hotelId].bookings.push({
+                bookingId: booking._id,
+                checkIn: booking.checkIn,
+                checkOut: booking.checkOut,
+                guests: booking.guests,
+                totalAmount: booking.totalAmount || 0,
+                status: booking.status,
+                createdAt: booking.createdAt
+            });
+
+            return acc;
+        }, {});
+
+        const hotels = Object.values(groupedMap).sort((a, b) => {
+            if ((b.totalBookings || 0) !== (a.totalBookings || 0)) {
+                return (b.totalBookings || 0) - (a.totalBookings || 0);
+            }
+            return (b.totalSpent || 0) - (a.totalSpent || 0);
+        });
+
+        const totalBookings = bookings.length;
+        const totalSpent = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
+
+        return res.status(200).json({
+            success: true,
+            user: {
+                _id: user._id,
+                username: user.username,
+                email: user.email
+            },
+            totalBookings,
+            totalSpent,
+            hotels
+        });
+    } catch (error) {
+        console.error('Error fetching user booking history:', error);
+        return res.status(500).json({ success: false, error: 'Failed to fetch user booking history' });
     }
 });
 
@@ -119,10 +222,118 @@ router.get('/hotels', isLoggedIn, requireAdmin, async (req, res) => {
             };
         }));
 
+        hotelsWithStats.sort((a, b) => {
+            if ((b.bookingCount || 0) !== (a.bookingCount || 0)) {
+                return (b.bookingCount || 0) - (a.bookingCount || 0);
+            }
+            if ((b.platformRevenue || 0) !== (a.platformRevenue || 0)) {
+                return (b.platformRevenue || 0) - (a.platformRevenue || 0);
+            }
+            return (a.title || '').localeCompare(b.title || '');
+        });
+
         res.status(200).json({ success: true, hotels: hotelsWithStats });
     } catch (error) {
         console.error('Error fetching hotels:', error);
         res.status(500).json({ error: 'Failed to fetch hotels' });
+    }
+});
+
+// Get one hotel's booking history grouped by room type
+router.get('/hotels/:id/bookings-room-types', isLoggedIn, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const listing = await Listing.findById(id)
+            .select('title location country roomTypes');
+
+        if (!listing) {
+            return res.status(404).json({ success: false, error: 'Hotel not found' });
+        }
+
+        const roomTypeOrder = ['single', 'double', 'triple'];
+        const availableRoomTypes = roomTypeOrder.filter((type) => (listing.roomTypes?.[type] || 0) > 0);
+        const baseTypes = availableRoomTypes.length ? availableRoomTypes : roomTypeOrder;
+
+        const groupMap = baseTypes.reduce((acc, type) => {
+            acc[type] = {
+                roomType: type,
+                availableRooms: listing.roomTypes?.[type] || 0,
+                totalBookings: 0,
+                totalSpent: 0,
+                bookings: []
+            };
+            return acc;
+        }, {});
+
+        const bookings = await Booking.find({ listing: id })
+            .populate('user', 'username email')
+            .sort('-createdAt');
+
+        const inferRoomTypeFromGuests = (guests) => {
+            if (guests <= 1) return 'single';
+            if (guests <= 2) return 'double';
+            return 'triple';
+        };
+
+        bookings.forEach((booking) => {
+            const allocation = booking.roomAllocation || {};
+            const allocatedTypes = roomTypeOrder.filter((type) => (allocation[type] || 0) > 0);
+
+            if (!allocatedTypes.length) {
+                const inferredType = inferRoomTypeFromGuests(booking.guests || 1);
+                allocatedTypes.push(inferredType);
+            }
+
+            allocatedTypes.forEach((roomType) => {
+                if (!groupMap[roomType]) {
+                    groupMap[roomType] = {
+                        roomType,
+                        availableRooms: listing.roomTypes?.[roomType] || 0,
+                        totalBookings: 0,
+                        totalSpent: 0,
+                        bookings: []
+                    };
+                }
+
+                groupMap[roomType].totalBookings += 1;
+                groupMap[roomType].totalSpent += booking.totalAmount || 0;
+                groupMap[roomType].bookings.push({
+                    bookingId: booking._id,
+                    userId: booking.user?._id || null,
+                    username: booking.user?.username || 'Unknown user',
+                    email: booking.user?.email || '',
+                    checkIn: booking.checkIn,
+                    checkOut: booking.checkOut,
+                    guests: booking.guests,
+                    totalAmount: booking.totalAmount || 0,
+                    status: booking.status,
+                    createdAt: booking.createdAt
+                });
+            });
+        });
+
+        const roomTypeGroups = Object.values(groupMap)
+            .sort((a, b) => {
+                const ai = roomTypeOrder.indexOf(a.roomType);
+                const bi = roomTypeOrder.indexOf(b.roomType);
+                return ai - bi;
+            });
+
+        return res.status(200).json({
+            success: true,
+            hotel: {
+                _id: listing._id,
+                title: listing.title,
+                location: listing.location,
+                country: listing.country
+            },
+            totalBookings: bookings.length,
+            roomTypeGroups
+        });
+    } catch (error) {
+        console.error('Error fetching hotel booking history by room type:', error);
+        return res.status(500).json({ success: false, error: 'Failed to fetch hotel booking history' });
     }
 });
 
@@ -231,6 +442,139 @@ router.get('/owners', isLoggedIn, requireAdmin, async (req, res) => {
     } catch (error) {
         console.error('Error fetching owners:', error);
         res.status(500).json({ error: 'Failed to fetch owners' });
+    }
+});
+
+// Get one owner's booking history: hotels -> room types -> bookings
+router.get('/owners/:id/bookings', isLoggedIn, requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const owner = await User.findById(id).select('username email role');
+        if (!owner) {
+            return res.status(404).json({ success: false, error: 'Owner not found' });
+        }
+
+        const ownerHotels = await Listing.find({ owner: id })
+            .select('title location country roomTypes')
+            .sort('-createdAt');
+
+        const roomTypeOrder = ['single', 'double', 'triple'];
+
+        const hotels = await Promise.all(ownerHotels.map(async (hotel) => {
+            const bookings = await Booking.find({ listing: hotel._id })
+                .populate('user', 'username email')
+                .sort('-createdAt');
+
+            const roomTypeGroups = roomTypeOrder.map((roomType) => ({
+                roomType,
+                availableRooms: hotel.roomTypes?.[roomType] || 0,
+                totalBookings: 0,
+                totalSpent: 0,
+                bookings: []
+            }));
+
+            const groupByType = roomTypeGroups.reduce((acc, group) => {
+                acc[group.roomType] = group;
+                return acc;
+            }, {});
+
+            const inferRoomTypeFromGuests = (guests) => {
+                if (guests <= 1) return 'single';
+                if (guests <= 2) return 'double';
+                return 'triple';
+            };
+
+            bookings.forEach((booking) => {
+                const allocation = booking.roomAllocation || {};
+                const allocatedTypes = roomTypeOrder.filter((type) => (allocation[type] || 0) > 0);
+
+                if (!allocatedTypes.length) {
+                    allocatedTypes.push(inferRoomTypeFromGuests(booking.guests || 1));
+                }
+
+                allocatedTypes.forEach((roomType) => {
+                    if (!groupByType[roomType]) {
+                        groupByType[roomType] = {
+                            roomType,
+                            availableRooms: hotel.roomTypes?.[roomType] || 0,
+                            totalBookings: 0,
+                            totalSpent: 0,
+                            bookings: []
+                        };
+                    }
+
+                    groupByType[roomType].totalBookings += 1;
+                    groupByType[roomType].totalSpent += booking.totalAmount || 0;
+                    groupByType[roomType].bookings.push({
+                        bookingId: booking._id,
+                        userId: booking.user?._id || null,
+                        username: booking.user?.username || 'Unknown user',
+                        email: booking.user?.email || '',
+                        checkIn: booking.checkIn,
+                        checkOut: booking.checkOut,
+                        guests: booking.guests,
+                        totalAmount: booking.totalAmount || 0,
+                        status: booking.status,
+                        createdAt: booking.createdAt
+                    });
+                });
+            });
+
+            const orderedGroups = Object.values(groupByType)
+                .sort((a, b) => {
+                    const ai = roomTypeOrder.indexOf(a.roomType);
+                    const bi = roomTypeOrder.indexOf(b.roomType);
+                    return ai - bi;
+                });
+
+            const totalBookings = bookings.length;
+            const totalSpent = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
+
+            return {
+                hotelId: hotel._id,
+                hotelName: hotel.title,
+                location: hotel.location,
+                country: hotel.country,
+                totalBookings,
+                totalSpent,
+                roomTypeGroups: orderedGroups
+            };
+        }));
+
+        const totalBookings = hotels.reduce((sum, hotel) => sum + (hotel.totalBookings || 0), 0);
+        const totalSpent = hotels.reduce((sum, hotel) => sum + (hotel.totalSpent || 0), 0);
+
+        return res.status(200).json({
+            success: true,
+            owner: {
+                _id: owner._id,
+                username: owner.username,
+                email: owner.email,
+                role: owner.role
+            },
+            totalHotels: hotels.length,
+            totalBookings,
+            totalSpent,
+            hotels
+        });
+    } catch (error) {
+        console.error('Error fetching owner booking history:', error);
+        return res.status(500).json({ success: false, error: 'Failed to fetch owner booking history' });
+    }
+});
+
+// Get all staff users
+router.get('/staffs', isLoggedIn, requireAdmin, async (req, res) => {
+    try {
+        const staffs = await User.find({ role: 'staff' })
+            .select('username email role createdAt updatedAt')
+            .sort('-createdAt');
+
+        return res.status(200).json({ success: true, staffs });
+    } catch (error) {
+        console.error('Error fetching staffs:', error);
+        return res.status(500).json({ success: false, error: 'Failed to fetch staffs' });
     }
 });
 
@@ -564,7 +908,8 @@ router.get('/charts/top-hotels', isLoggedIn, requireAdmin, async (req, res) => {
                 $group: {
                     _id: '$listing',
                     totalBookings: { $sum: 1 },
-                    totalRevenue: { $sum: '$totalAmount' }
+                    totalRevenue: { $sum: '$totalAmount' },
+                    listingTitleSnapshot: { $first: '$listingTitle' }
                 }
             },
             { $sort: { totalBookings: -1 } },
@@ -577,11 +922,16 @@ router.get('/charts/top-hotels', isLoggedIn, requireAdmin, async (req, res) => {
                     as: 'hotel'
                 }
             },
-            { $unwind: '$hotel' }
+            {
+                $unwind: {
+                    path: '$hotel',
+                    preserveNullAndEmptyArrays: true
+                }
+            }
         ]);
 
         let formattedData = topHotels.map(item => ({
-            name: item.hotel.title,
+            name: item.hotel?.title || item.listingTitleSnapshot || `Deleted Hotel (${String(item._id).slice(-6)})`,
             bookings: item.totalBookings,
             revenue: item.totalRevenue
         }));

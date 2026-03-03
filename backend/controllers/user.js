@@ -226,7 +226,7 @@ module.exports.createBooking = async (req, res) => {
                 }
 
                 const isActiveMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
-                serviceFee = isActiveMember ? 0 : Math.round(baseAmount * 0.1);
+                serviceFee = isActiveMember ? 0 : Math.round(baseAmount * 0.05);
                 totalAmount = baseAmount + serviceFee;
             }
         }
@@ -234,6 +234,9 @@ module.exports.createBooking = async (req, res) => {
         const booking = new Booking({
             user: req.user._id,
             listing: listing._id,
+            listingTitle: listing.title || '',
+            listingLocation: listing.location || '',
+            listingCountry: listing.country || '',
             checkIn,
             checkOut,
             guests: parseInt(guests) || 1,

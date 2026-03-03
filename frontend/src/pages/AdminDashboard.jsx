@@ -8,6 +8,7 @@ import AdminOverview from '../components/admin/AdminOverview';
 import AdminUsers from '../components/admin/AdminUsers';
 import AdminHotels from '../components/admin/AdminHotels';
 import AdminOwners from '../components/admin/AdminOwners';
+import AdminStaffs from '../components/admin/AdminStaffs';
 import AdminApprovals from '../components/admin/AdminApprovals';
 import AdminMessages from '../components/admin/AdminMessages';
 
@@ -141,6 +142,15 @@ const AdminDashboard = () => {
             Owners
           </button>
           <button
+            onClick={() => setTab('staffs')}
+            className={`pb-3 px-1 -mb-px border-b-2 transition whitespace-nowrap ${tab === 'staffs'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'
+              }`}
+          >
+            Staffs
+          </button>
+          <button
             onClick={() => setTab('approvals')}
             className={`pb-3 px-1 -mb-px border-b-2 transition whitespace-nowrap ${tab === 'approvals'
                 ? 'border-primary text-primary'
@@ -164,6 +174,7 @@ const AdminDashboard = () => {
         {tab === 'users' && <AdminUsers userRole={user?.role} />}
         {tab === 'hotels' && <AdminHotels userRole={user?.role} />}
         {tab === 'owners' && <AdminOwners userRole={user?.role} />}
+        {tab === 'staffs' && <AdminStaffs />}
         {tab === 'approvals' && <AdminApprovals userRole={user?.role} />}
         {tab === 'messages' && <AdminMessages />}
       </div>

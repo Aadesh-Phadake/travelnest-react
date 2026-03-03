@@ -130,6 +130,9 @@ router.post('/verify', isLoggedIn, async (req, res, next) => {
         const bookingDetails = {
             user: req.user._id,
             listing: propertyId,
+            listingTitle: property.title || '',
+            listingLocation: property.location || '',
+            listingCountry: property.country || '',
             checkIn,
             checkOut,
             guests,
@@ -299,6 +302,9 @@ router.post('/wallet-only', isLoggedIn, async (req, res, next) => {
         const newBooking = new Booking({
             user: req.user._id,
             listing: propertyId,
+            listingTitle: property.title || '',
+            listingLocation: property.location || '',
+            listingCountry: property.country || '',
             checkIn,
             checkOut,
             guests,
