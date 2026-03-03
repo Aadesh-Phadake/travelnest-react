@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAdminApprovals } from '../../hooks/admin/useAdminApprovals';
 
-const AdminApprovals = () => {
+const AdminApprovals = ({ userRole }) => {
   const {
     pendingManagers,
     pendingHotels,
@@ -55,7 +55,7 @@ const AdminApprovals = () => {
                 <th className="px-4 py-2 font-semibold">Manager</th>
                 <th className="px-4 py-2 font-semibold">Email</th>
                 <th className="px-4 py-2 font-semibold">Requested at</th>
-                <th className="px-4 py-2 font-semibold text-right">Actions</th>
+                {userRole !== 'admin' && <th className="px-4 py-2 font-semibold text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -72,22 +72,24 @@ const AdminApprovals = () => {
                       ? new Date(m.createdAt).toLocaleDateString('en-GB')
                       : '—'}
                   </td>
-                  <td className="px-4 py-2 text-right">
-                    <div className="inline-flex items-center gap-2">
-                      <button
-                        onClick={() => handleApproveManager(m._id)}
-                        className="px-3 py-1 rounded-full text-[11px] font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => handleRejectManager(m._id)}
-                        className="px-3 py-1 rounded-full text-[11px] font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 transition"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </td>
+                  {userRole !== 'admin' && (
+                    <td className="px-4 py-2 text-right">
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          onClick={() => handleApproveManager(m._id)}
+                          className="px-3 py-1 rounded-full text-[11px] font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleRejectManager(m._id)}
+                          className="px-3 py-1 rounded-full text-[11px] font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 transition"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
               {pendingManagers.length === 0 && (
@@ -128,7 +130,7 @@ const AdminApprovals = () => {
                 <th className="px-4 py-2 font-semibold">Location</th>
                 <th className="px-4 py-2 font-semibold">Manager</th>
                 <th className="px-4 py-2 font-semibold">Submitted at</th>
-                <th className="px-4 py-2 font-semibold text-right">Actions</th>
+                {userRole !== 'admin' && <th className="px-4 py-2 font-semibold text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -148,22 +150,24 @@ const AdminApprovals = () => {
                       ? new Date(h.createdAt).toLocaleDateString('en-GB')
                       : '—'}
                   </td>
-                  <td className="px-4 py-2 text-right">
-                    <div className="inline-flex items-center gap-2">
-                      <button
-                        onClick={() => handleApproveHotel(h._id)}
-                        className="px-3 py-1 rounded-full text-[11px] font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => handleRejectHotel(h._id)}
-                        className="px-3 py-1 rounded-full text-[11px] font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 transition"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </td>
+                  {userRole !== 'admin' && (
+                    <td className="px-4 py-2 text-right">
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          onClick={() => handleApproveHotel(h._id)}
+                          className="px-3 py-1 rounded-full text-[11px] font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleRejectHotel(h._id)}
+                          className="px-3 py-1 rounded-full text-[11px] font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800 transition"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
               {pendingHotels.length === 0 && (

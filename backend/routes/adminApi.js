@@ -11,17 +11,23 @@ function getMongoWeek(date) {
     const startOfYear = new Date(date.getFullYear(), 0, 1);
     const dayOfYear = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000)) + 1;
     const startOfYearDay = startOfYear.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    
+
     // MongoDB $week starts week on Sunday and returns 0-based week number
     const week = Math.floor((dayOfYear + startOfYearDay - 1) / 7);
     return week;
 }
 
 // Admin middleware (legacy check for both username and role)
-// We keep this local version to support the "TravelNest" master account
+// Allows both admin (view-only) and staff (full operations)
 function requireAdmin(req, res, next) {
-    if (req.user?.username === "TravelNest" || req.user?.role === 'admin') return next();
+    if (req.user?.username === "TravelNest" || req.user?.role === 'admin' || req.user?.role === 'staff') return next();
     return res.status(403).json({ message: 'Admin access required' });
+}
+
+// Staff-only middleware for mutation operations
+function requireStaff(req, res, next) {
+    if (req.user?.username === "TravelNest" || req.user?.role === 'staff') return next();
+    return res.status(403).json({ message: 'Staff access required. Admin role is view-only.' });
 }
 
 // Get all users with statistics
@@ -29,15 +35,15 @@ router.get('/users', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const users = await User.find({ username: { $ne: "TravelNest" } })
             .sort('-createdAt');
-        
+
         // Add booking statistics for each user
         const usersWithStats = await Promise.all(users.map(async (user) => {
             const bookings = await Booking.find({ user: user._id });
             const totalBookings = bookings.length;
             const totalSpent = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
-            const lastBooking = bookings.length > 0 ? 
+            const lastBooking = bookings.length > 0 ?
                 Math.max(...bookings.map(b => new Date(b.createdAt).getTime())) : null;
-            
+
             return {
                 _id: user._id,
                 username: user.username,
@@ -50,7 +56,7 @@ router.get('/users', isLoggedIn, requireAdmin, async (req, res) => {
                 lastBooking: lastBooking ? new Date(lastBooking) : null
             };
         }));
-        
+
         res.status(200).json({ success: true, users: usersWithStats });
     } catch (error) {
         console.error('Error fetching users:', error);
@@ -71,7 +77,7 @@ router.get('/hotels', isLoggedIn, requireAdmin, async (req, res) => {
         })
             .populate('owner', 'username email')
             .sort('-createdAt');
-        
+
         // Add booking count and revenue/commission stats for each hotel
         const OWNER_REVENUE_RATE = 0.15;
         const hotelsWithStats = await Promise.all(hotels.map(async (hotel) => {
@@ -92,10 +98,10 @@ router.get('/hotels', isLoggedIn, requireAdmin, async (req, res) => {
             const ownerGrossRevenue = Math.max(0, grossRevenue - commission);
             const ownerCommission = ownerGrossRevenue * OWNER_REVENUE_RATE;
             const platformRevenue = commission + ownerCommission;
-            
+
             // Prefer createdAt; fall back to ObjectId timestamp for older documents
             const createdAt = hotel.createdAt || (hotel._id && hotel._id.getTimestamp ? hotel._id.getTimestamp() : null);
-            
+
             return {
                 _id: hotel._id,
                 title: hotel.title,
@@ -112,7 +118,7 @@ router.get('/hotels', isLoggedIn, requireAdmin, async (req, res) => {
                 images: hotel.images
             };
         }));
-        
+
         res.status(200).json({ success: true, hotels: hotelsWithStats });
     } catch (error) {
         console.error('Error fetching hotels:', error);
@@ -229,10 +235,10 @@ router.get('/owners', isLoggedIn, requireAdmin, async (req, res) => {
 });
 
 // Delete user
-router.delete('/users/:id', isLoggedIn, requireAdmin, async (req, res) => {
+router.delete('/users/:id', isLoggedIn, requireStaff, async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         // Also delete user's bookings
         await Booking.deleteMany({ user: id });
 
@@ -240,11 +246,11 @@ router.delete('/users/:id', isLoggedIn, requireAdmin, async (req, res) => {
         await Listing.deleteMany({ owner: id });
 
         const deletedUser = await User.findByIdAndDelete(id);
-        
+
         if (!deletedUser) {
             return res.status(404).json({ error: 'User not found' });
         }
-        
+
         res.status(200).json({ success: true, message: 'User and their bookings deleted successfully' });
     } catch (error) {
         console.error('Error deleting user:', error);
@@ -253,16 +259,16 @@ router.delete('/users/:id', isLoggedIn, requireAdmin, async (req, res) => {
 });
 
 // Delete hotel
-router.delete('/hotels/:id', isLoggedIn, requireAdmin, async (req, res) => {
+router.delete('/hotels/:id', isLoggedIn, requireStaff, async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         const deletedHotel = await Listing.findByIdAndDelete(id);
-        
+
         if (!deletedHotel) {
             return res.status(404).json({ error: 'Hotel not found' });
         }
-        
+
         res.status(200).json({ success: true, message: 'Hotel deleted successfully' });
     } catch (error) {
         console.error('Error deleting hotel:', error);
@@ -271,11 +277,11 @@ router.delete('/hotels/:id', isLoggedIn, requireAdmin, async (req, res) => {
 });
 
 // Update user membership status
-router.patch('/users/:id/membership', isLoggedIn, requireAdmin, async (req, res) => {
+router.patch('/users/:id/membership', isLoggedIn, requireStaff, async (req, res) => {
     try {
         const { id } = req.params;
         const { isMember } = req.body;
-        
+
         const updateData = { isMember };
         if (isMember) {
             // Activate membership for 30 days
@@ -284,13 +290,13 @@ router.patch('/users/:id/membership', isLoggedIn, requireAdmin, async (req, res)
         } else {
             updateData.membershipExpiresAt = null;
         }
-        
+
         const updatedUser = await User.findByIdAndUpdate(id, updateData, { new: true });
-        
+
         if (!updatedUser) {
             return res.status(404).json({ error: 'User not found' });
         }
-        
+
         res.status(200).json({ success: true, message: 'User membership updated successfully' });
     } catch (error) {
         console.error('Error updating user membership:', error);
@@ -313,7 +319,7 @@ router.get('/managers/pending', isLoggedIn, requireAdmin, async (req, res) => {
 });
 
 // Approve manager
-router.patch('/managers/:id/approve', isLoggedIn, requireAdmin, async (req, res) => {
+router.patch('/managers/:id/approve', isLoggedIn, requireStaff, async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = {
@@ -333,7 +339,7 @@ router.patch('/managers/:id/approve', isLoggedIn, requireAdmin, async (req, res)
 });
 
 // Reject manager (optional: demote to traveller)
-router.patch('/managers/:id/reject', isLoggedIn, requireAdmin, async (req, res) => {
+router.patch('/managers/:id/reject', isLoggedIn, requireStaff, async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = {
@@ -369,7 +375,7 @@ router.get('/hotels/pending', isLoggedIn, requireAdmin, async (req, res) => {
 });
 
 // Approve hotel
-router.patch('/hotels/:id/approve', isLoggedIn, requireAdmin, async (req, res) => {
+router.patch('/hotels/:id/approve', isLoggedIn, requireStaff, async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = {
@@ -389,20 +395,20 @@ router.patch('/hotels/:id/approve', isLoggedIn, requireAdmin, async (req, res) =
 });
 
 // Reject hotel
-router.patch('/hotels/:id/reject', isLoggedIn, requireAdmin, async (req, res) => {
+router.patch('/hotels/:id/reject', isLoggedIn, requireStaff, async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         // Delete the hotel listing and its associated bookings
         const deletedHotel = await Listing.findByIdAndDelete(id);
-        
+
         if (!deletedHotel) {
             return res.status(404).json({ error: 'Hotel not found' });
         }
 
         // Clean up any bookings associated with this listing (though unlikely for pending hotels)
         await Booking.deleteMany({ listing: id });
-        
+
         res.status(200).json({ success: true, message: 'Hotel rejected and removed successfully' });
     } catch (error) {
         console.error('Error rejecting hotel:', error);
@@ -414,11 +420,11 @@ router.patch('/hotels/:id/reject', isLoggedIn, requireAdmin, async (req, res) =>
 function generateConsecutivePeriods(period, count = 12) {
     const periods = [];
     const now = new Date();
-    
+
     for (let i = count - 1; i >= 0; i--) {
         const date = new Date(now);
         let label, key;
-        
+
         switch (period) {
             case 'day':
                 date.setDate(now.getDate() - i);
@@ -451,10 +457,10 @@ function generateConsecutivePeriods(period, count = 12) {
                 label = `${date.getMonth() + 1}/${date.getFullYear()}`;
                 key = `${date.getFullYear()}-${date.getMonth() + 1}`;
         }
-        
+
         periods.push({ label, key, revenue: 0, bookings: 0, commission: 0 });
     }
-    
+
     return periods;
 }
 
@@ -463,11 +469,11 @@ router.get('/charts/revenue', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { period = 'month' } = req.query;
         let groupBy, matchConditions = {};
-        
+
         // Set date range for the query
         const now = new Date();
         const startDate = new Date(now);
-        
+
         switch (period) {
             case 'day':
                 startDate.setDate(now.getDate() - 11);
@@ -498,9 +504,9 @@ router.get('/charts/revenue', isLoggedIn, requireAdmin, async (req, res) => {
                 };
                 break;
         }
-        
+
         matchConditions.createdAt = { $gte: startDate, $lte: now };
-        
+
         const revenueData = await Booking.aggregate([
             { $match: matchConditions },
             {
@@ -513,10 +519,10 @@ router.get('/charts/revenue', isLoggedIn, requireAdmin, async (req, res) => {
             },
             { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1, '_id.week': 1 } }
         ]);
-        
+
         // Generate consecutive periods
         const consecutivePeriods = generateConsecutivePeriods(period, 12);
-        
+
         // Map actual data to consecutive periods
         revenueData.forEach(item => {
             let key;
@@ -534,7 +540,7 @@ router.get('/charts/revenue', isLoggedIn, requireAdmin, async (req, res) => {
                     key = `${item._id.year}`;
                     break;
             }
-            
+
             const periodIndex = consecutivePeriods.findIndex(p => p.key === key);
             if (periodIndex !== -1) {
                 consecutivePeriods[periodIndex].revenue = item.totalRevenue;
@@ -542,7 +548,7 @@ router.get('/charts/revenue', isLoggedIn, requireAdmin, async (req, res) => {
                 consecutivePeriods[periodIndex].commission = item.totalCommission || 0;
             }
         });
-        
+
         res.status(200).json({ success: true, data: consecutivePeriods });
     } catch (error) {
         console.error('Error fetching revenue chart data:', error);
@@ -573,27 +579,27 @@ router.get('/charts/top-hotels', isLoggedIn, requireAdmin, async (req, res) => {
             },
             { $unwind: '$hotel' }
         ]);
-        
+
         let formattedData = topHotels.map(item => ({
             name: item.hotel.title,
             bookings: item.totalBookings,
             revenue: item.totalRevenue
         }));
-        
+
         // If no bookings found, get top 5 hotels by creation date as fallback
         if (formattedData.length === 0) {
             const hotels = await Listing.find({})
                 .sort('-createdAt')
                 .limit(5)
                 .select('title');
-            
+
             formattedData = hotels.map(hotel => ({
                 name: hotel.title,
                 bookings: 0,
                 revenue: 0
             }));
         }
-        
+
         res.status(200).json({ success: true, data: formattedData });
     } catch (error) {
         console.error('Error fetching top hotels data:', error);
@@ -606,11 +612,11 @@ router.get('/charts/bookings-trend', isLoggedIn, requireAdmin, async (req, res) 
     try {
         const { period = 'month' } = req.query;
         let groupBy, matchConditions = {};
-        
+
         // Set date range for the query
         const now = new Date();
         const startDate = new Date(now);
-        
+
         switch (period) {
             case 'day':
                 startDate.setDate(now.getDate() - 11);
@@ -641,9 +647,9 @@ router.get('/charts/bookings-trend', isLoggedIn, requireAdmin, async (req, res) 
                 };
                 break;
         }
-        
+
         matchConditions.createdAt = { $gte: startDate, $lte: now };
-        
+
         const bookingsTrend = await Booking.aggregate([
             { $match: matchConditions },
             {
@@ -654,10 +660,10 @@ router.get('/charts/bookings-trend', isLoggedIn, requireAdmin, async (req, res) 
             },
             { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1, '_id.week': 1 } }
         ]);
-        
+
         // Generate consecutive periods
         const consecutivePeriods = generateConsecutivePeriods(period, 12);
-        
+
         // Map actual data to consecutive periods
         bookingsTrend.forEach(item => {
             let key;
@@ -675,13 +681,13 @@ router.get('/charts/bookings-trend', isLoggedIn, requireAdmin, async (req, res) 
                     key = `${item._id.year}`;
                     break;
             }
-            
+
             const periodIndex = consecutivePeriods.findIndex(p => p.key === key);
             if (periodIndex !== -1) {
                 consecutivePeriods[periodIndex].bookings = item.totalBookings;
             }
         });
-        
+
         res.status(200).json({ success: true, data: consecutivePeriods });
     } catch (error) {
         console.error('Error fetching bookings trend data:', error);
