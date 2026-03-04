@@ -6,6 +6,7 @@ yarn-error.log*
 
 # Log files
 logs.txt
+error logs.txt
 *.log
 
 # Environment variables
