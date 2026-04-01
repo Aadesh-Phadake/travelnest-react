@@ -7,13 +7,37 @@ const Booking = require('../models/booking');
 const ContactMessage = require('../models/contactMessage');
 const wrapAsync = require('../utils/wrapAsync');
 
-// Manager Dashboard
+/**
+ * @swagger
+ * /manager/dashboard:
+ *   get:
+ *     tags: [Manager]
+ *     summary: Get manager dashboard page
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Dashboard rendered
+ *       403:
+ *         description: Manager access required
+ */
 router.get('/dashboard', isLoggedIn, requireManager, wrapAsync(async (req, res) => {
     res.render('manager/dashboard', { currentUser: req.user });
 }));
 
 
-// API Routes for Manager Dashboard (AJAX)
+/**
+ * @swagger
+ * /manager/api/hotels:
+ *   get:
+ *     tags: [Manager]
+ *     summary: Get all hotels owned by the manager with stats
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of hotels with booking statistics
+ */
 router.get('/api/hotels', isLoggedIn, requireManager, wrapAsync(async (req, res) => {
     try {
         const hotels = await Listing.find({ owner: req.user._id })
@@ -55,7 +79,18 @@ router.get('/api/hotels', isLoggedIn, requireManager, wrapAsync(async (req, res)
     }
 }));
 
-// API to get all bookings for manager's hotels
+/**
+ * @swagger
+ * /manager/api/bookings:
+ *   get:
+ *     tags: [Manager]
+ *     summary: Get all bookings for manager's hotels
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of bookings
+ */
 router.get('/api/bookings', isLoggedIn, requireManager, wrapAsync(async (req, res) => {
     try {
         const managerHotels = await Listing.find({ owner: req.user._id }, '_id');
@@ -73,7 +108,18 @@ router.get('/api/bookings', isLoggedIn, requireManager, wrapAsync(async (req, re
     }
 }));
 
-// API to get taxi bookings for manager's hotels
+/**
+ * @swagger
+ * /manager/api/taxi-bookings:
+ *   get:
+ *     tags: [Manager]
+ *     summary: Get taxi bookings for manager's hotels
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of taxi bookings
+ */
 router.get('/api/taxi-bookings', isLoggedIn, requireManager, wrapAsync(async (req, res) => {
     try {
         const managerHotels = await Listing.find({ owner: req.user._id }, '_id');
@@ -92,7 +138,18 @@ router.get('/api/taxi-bookings', isLoggedIn, requireManager, wrapAsync(async (re
     }
 }));
 
-// API to get dashboard stats
+/**
+ * @swagger
+ * /manager/api/stats:
+ *   get:
+ *     tags: [Manager]
+ *     summary: Get dashboard statistics for manager
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Stats object with totals
+ */
 router.get('/api/stats', isLoggedIn, requireManager, wrapAsync(async (req, res) => {
     try {
         const managerHotels = await Listing.find({ owner: req.user._id }, '_id');
@@ -126,7 +183,18 @@ router.get('/api/stats', isLoggedIn, requireManager, wrapAsync(async (req, res) 
     }
 }));
 
-// API to get messages/complaints for manager
+/**
+ * @swagger
+ * /manager/api/messages:
+ *   get:
+ *     tags: [Manager]
+ *     summary: Get messages/complaints for manager
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of contact messages
+ */
 router.get('/api/messages', isLoggedIn, requireManager, wrapAsync(async (req, res) => {
     try {
         const messages = await ContactMessage.find({ recipient: req.user._id })
@@ -141,7 +209,29 @@ router.get('/api/messages', isLoggedIn, requireManager, wrapAsync(async (req, re
     }
 }));
 
-// API to cancel booking and process refund (Owner cancellation)
+/**
+ * @swagger
+ * /manager/api/bookings/{id}/cancel:
+ *   post:
+ *     tags: [Manager]
+ *     summary: Cancel a booking and process refund
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Booking ID
+ *     responses:
+ *       200:
+ *         description: Booking cancelled and refund initiated
+ *       404:
+ *         description: Booking not found
+ *       403:
+ *         description: Not authorized
+ */
 router.post('/api/bookings/:id/cancel', isLoggedIn, requireManager, wrapAsync(async (req, res) => {
     try {
         const bookingId = req.params.id;

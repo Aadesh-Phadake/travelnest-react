@@ -34,7 +34,30 @@ const handleUpload = (uploadMiddleware) => {
     };
 };
 
-// Upload single image
+/**
+ * @swagger
+ * /api/upload/image:
+ *   post:
+ *     tags: [Upload]
+ *     summary: Upload a single image
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Image uploaded successfully
+ *       400:
+ *         description: No image provided
+ */
 router.post('/image', isLoggedIn, handleUpload(upload.single('image')), async (req, res) => {
     try {
         console.log('Single image upload request:', {
@@ -74,7 +97,32 @@ router.post('/image', isLoggedIn, handleUpload(upload.single('image')), async (r
     }
 });
 
-// Upload multiple images
+/**
+ * @swagger
+ * /api/upload/images:
+ *   post:
+ *     tags: [Upload]
+ *     summary: Upload multiple images (up to 20)
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *     responses:
+ *       200:
+ *         description: Images uploaded successfully
+ *       400:
+ *         description: No images provided
+ */
 router.post('/images', isLoggedIn, handleUpload(upload.array('images', 20)), async (req, res) => {
     try {
         console.log('Upload request received:', {
@@ -121,7 +169,30 @@ router.post('/images', isLoggedIn, handleUpload(upload.array('images', 20)), asy
     }
 });
 
-// Upload document (for hotel license)
+/**
+ * @swagger
+ * /api/upload/document:
+ *   post:
+ *     tags: [Upload]
+ *     summary: Upload a document (e.g., hotel license)
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               document:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Document uploaded successfully
+ *       400:
+ *         description: No document provided
+ */
 router.post('/document', isLoggedIn, handleUpload(upload.single('document')), async (req, res) => {
     try {
         console.log('Document upload request:', {
@@ -165,7 +236,18 @@ router.post('/document', isLoggedIn, handleUpload(upload.single('document')), as
     }
 });
 
-// Test endpoint to check Cloudinary configuration
+/**
+ * @swagger
+ * /api/upload/test:
+ *   get:
+ *     tags: [Upload]
+ *     summary: Test Cloudinary configuration
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Configuration status
+ */
 router.get('/test', isLoggedIn, (req, res) => {
     const cloudinary = require('../utils/cloudinary').cloudinary;
     const config = cloudinary.config();
