@@ -30,7 +30,20 @@ function requireStaff(req, res, next) {
     return res.status(403).json({ message: 'Staff access required. Admin role is view-only.' });
 }
 
-// Get all users with statistics
+/**
+ * @swagger
+ * /api/admin/users:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get all users with statistics
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of users with booking stats
+ *       403:
+ *         description: Admin access required
+ */
 router.get('/users', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const users = await User.find({
@@ -77,7 +90,26 @@ router.get('/users', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Get one user's booking history grouped by hotel
+/**
+ * @swagger
+ * /api/admin/users/{id}/bookings:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get a user's booking history grouped by hotel
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User booking history
+ *       404:
+ *         description: User not found
+ */
 router.get('/users/:id/bookings', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -167,7 +199,18 @@ router.get('/users/:id/bookings', isLoggedIn, requireAdmin, async (req, res) => 
     }
 });
 
-// Get all hotels with statistics
+/**
+ * @swagger
+ * /api/admin/hotels:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get all approved hotels with statistics
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of hotels with stats
+ */
 router.get('/hotels', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         // Only fetch approved hotels (or legacy ones with no status)
@@ -239,7 +282,26 @@ router.get('/hotels', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Get one hotel's booking history grouped by room type
+/**
+ * @swagger
+ * /api/admin/hotels/{id}/bookings-room-types:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get hotel booking history grouped by room type
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Booking history by room type
+ *       404:
+ *         description: Hotel not found
+ */
 router.get('/hotels/:id/bookings-room-types', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -337,7 +399,18 @@ router.get('/hotels/:id/bookings-room-types', isLoggedIn, requireAdmin, async (r
     }
 });
 
-// Get per-owner (hotel manager) statistics
+/**
+ * @swagger
+ * /api/admin/owners:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get per-owner (hotel manager) statistics
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of owners with stats
+ */
 router.get('/owners', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const OWNER_REVENUE_RATE = 0.15;
@@ -445,7 +518,26 @@ router.get('/owners', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Get one owner's booking history: hotels -> room types -> bookings
+/**
+ * @swagger
+ * /api/admin/owners/{id}/bookings:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get owner's booking history grouped by hotel and room type
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Owner booking history
+ *       404:
+ *         description: Owner not found
+ */
 router.get('/owners/:id/bookings', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -564,7 +656,18 @@ router.get('/owners/:id/bookings', isLoggedIn, requireAdmin, async (req, res) =>
     }
 });
 
-// Get all staff users
+/**
+ * @swagger
+ * /api/admin/staffs:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get all staff users
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of staff users
+ */
 router.get('/staffs', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const staffs = await User.find({ role: 'staff' })
@@ -578,7 +681,26 @@ router.get('/staffs', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Delete user
+/**
+ * @swagger
+ * /api/admin/users/{id}:
+ *   delete:
+ *     tags: [Admin]
+ *     summary: Delete a user and their data
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User deleted
+ *       404:
+ *         description: User not found
+ */
 router.delete('/users/:id', isLoggedIn, requireStaff, async (req, res) => {
     try {
         const { id } = req.params;
@@ -602,7 +724,26 @@ router.delete('/users/:id', isLoggedIn, requireStaff, async (req, res) => {
     }
 });
 
-// Delete hotel
+/**
+ * @swagger
+ * /api/admin/hotels/{id}:
+ *   delete:
+ *     tags: [Admin]
+ *     summary: Delete a hotel
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Hotel deleted
+ *       404:
+ *         description: Hotel not found
+ */
 router.delete('/hotels/:id', isLoggedIn, requireStaff, async (req, res) => {
     try {
         const { id } = req.params;
@@ -620,7 +761,33 @@ router.delete('/hotels/:id', isLoggedIn, requireStaff, async (req, res) => {
     }
 });
 
-// Update user membership status
+/**
+ * @swagger
+ * /api/admin/users/{id}/membership:
+ *   patch:
+ *     tags: [Admin]
+ *     summary: Update user membership status
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               isMember:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Membership updated
+ */
 router.patch('/users/:id/membership', isLoggedIn, requireStaff, async (req, res) => {
     try {
         const { id } = req.params;
@@ -650,7 +817,18 @@ router.patch('/users/:id/membership', isLoggedIn, requireStaff, async (req, res)
 
 // ===== Manager approval APIs =====
 
-// Get pending manager approvals
+/**
+ * @swagger
+ * /api/admin/managers/pending:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get pending manager approvals
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of pending managers
+ */
 router.get('/managers/pending', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const managers = await User.find({ role: 'manager', isApproved: false })
@@ -662,7 +840,26 @@ router.get('/managers/pending', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Approve manager
+/**
+ * @swagger
+ * /api/admin/managers/{id}/approve:
+ *   patch:
+ *     tags: [Admin]
+ *     summary: Approve a manager
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Manager approved
+ *       404:
+ *         description: Manager not found
+ */
 router.patch('/managers/:id/approve', isLoggedIn, requireStaff, async (req, res) => {
     try {
         const { id } = req.params;
@@ -682,7 +879,26 @@ router.patch('/managers/:id/approve', isLoggedIn, requireStaff, async (req, res)
     }
 });
 
-// Reject manager (optional: demote to traveller)
+/**
+ * @swagger
+ * /api/admin/managers/{id}/reject:
+ *   patch:
+ *     tags: [Admin]
+ *     summary: Reject a manager (demote to traveller)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Manager rejected
+ *       404:
+ *         description: Manager not found
+ */
 router.patch('/managers/:id/reject', isLoggedIn, requireStaff, async (req, res) => {
     try {
         const { id } = req.params;
@@ -705,7 +921,18 @@ router.patch('/managers/:id/reject', isLoggedIn, requireStaff, async (req, res) 
 
 // ===== Hotel approval APIs =====
 
-// Get pending hotel approvals
+/**
+ * @swagger
+ * /api/admin/hotels/pending:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get pending hotel approvals
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of pending hotels
+ */
 router.get('/hotels/pending', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const hotels = await Listing.find({ status: 'pending' })
@@ -718,7 +945,26 @@ router.get('/hotels/pending', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Approve hotel
+/**
+ * @swagger
+ * /api/admin/hotels/{id}/approve:
+ *   patch:
+ *     tags: [Admin]
+ *     summary: Approve a hotel listing
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Hotel approved
+ *       404:
+ *         description: Hotel not found
+ */
 router.patch('/hotels/:id/approve', isLoggedIn, requireStaff, async (req, res) => {
     try {
         const { id } = req.params;
@@ -738,7 +984,26 @@ router.patch('/hotels/:id/approve', isLoggedIn, requireStaff, async (req, res) =
     }
 });
 
-// Reject hotel
+/**
+ * @swagger
+ * /api/admin/hotels/{id}/reject:
+ *   patch:
+ *     tags: [Admin]
+ *     summary: Reject a hotel listing (deletes it)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Hotel rejected and removed
+ *       404:
+ *         description: Hotel not found
+ */
 router.patch('/hotels/:id/reject', isLoggedIn, requireStaff, async (req, res) => {
     try {
         const { id } = req.params;
@@ -808,7 +1073,25 @@ function generateConsecutivePeriods(period, count = 12) {
     return periods;
 }
 
-// Get chart data for dashboard
+/**
+ * @swagger
+ * /api/admin/charts/revenue:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get revenue chart data
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [day, week, month, year]
+ *         description: Time period granularity
+ *     responses:
+ *       200:
+ *         description: Revenue chart data
+ */
 router.get('/charts/revenue', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { period = 'month' } = req.query;
@@ -900,7 +1183,18 @@ router.get('/charts/revenue', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Get top hotels data
+/**
+ * @swagger
+ * /api/admin/charts/top-hotels:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get top 5 hotels by bookings
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Top hotels data
+ */
 router.get('/charts/top-hotels', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const topHotels = await Booking.aggregate([
@@ -957,7 +1251,25 @@ router.get('/charts/top-hotels', isLoggedIn, requireAdmin, async (req, res) => {
     }
 });
 
-// Get bookings trend data
+/**
+ * @swagger
+ * /api/admin/charts/bookings-trend:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get bookings trend data over time
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: period
+ *         schema:
+ *           type: string
+ *           enum: [day, week, month, year]
+ *         description: Time period granularity
+ *     responses:
+ *       200:
+ *         description: Bookings trend data
+ */
 router.get('/charts/bookings-trend', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const { period = 'month' } = req.query;
@@ -1045,7 +1357,18 @@ router.get('/charts/bookings-trend', isLoggedIn, requireAdmin, async (req, res) 
     }
 });
 
-// Commission summary for admin overview
+/**
+ * @swagger
+ * /api/admin/commission/summary:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get commission summary for admin overview
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Commission summary data
+ */
 router.get('/commission/summary', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const summary = await Booking.aggregate([
@@ -1077,7 +1400,18 @@ router.get('/commission/summary', isLoggedIn, requireAdmin, async (req, res) => 
     }
 });
 
-// Get all contact messages
+/**
+ * @swagger
+ * /api/admin/contact-messages:
+ *   get:
+ *     tags: [Admin]
+ *     summary: Get all contact messages
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of contact messages
+ */
 router.get('/contact-messages', isLoggedIn, requireAdmin, async (req, res) => {
     try {
         const messages = await ContactMessage.find()

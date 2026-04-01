@@ -4,8 +4,42 @@ const paymentController = require('../controllers/paymentController');
 const { isLoggedIn } = require('../middleware');
 const Listing = require('../models/listing');
 
-// Create payment order for a listing
-// React will call this when the user clicks "Reserve"
+/**
+ * @swagger
+ * /payment/create/{propertyId}:
+ *   get:
+ *     tags: [Payments]
+ *     summary: Create a payment order for a listing
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: propertyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: checkIn
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: checkOut
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: guests
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: walletDeduction
+ *         schema:
+ *           type: number
+ *     responses:
+ *       200:
+ *         description: Razorpay order created
+ *       400:
+ *         description: Rooms not available
+ */
 router.get('/create/:propertyId', isLoggedIn, async (req, res, next) => {
     try {
         const propertyId = req.params.propertyId;
@@ -73,7 +107,43 @@ router.get('/create/:propertyId', isLoggedIn, async (req, res, next) => {
     }
 });
 
-// Verify payment and include 5% admin fee
+/**
+ * @swagger
+ * /payment/verify:
+ *   post:
+ *     tags: [Payments]
+ *     summary: Verify Razorpay payment and create booking
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               razorpay_order_id:
+ *                 type: string
+ *               razorpay_payment_id:
+ *                 type: string
+ *               razorpay_signature:
+ *                 type: string
+ *               propertyId:
+ *                 type: string
+ *               checkIn:
+ *                 type: string
+ *               checkOut:
+ *                 type: string
+ *               guests:
+ *                 type: integer
+ *               walletDeduction:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Payment verified, booking confirmed
+ *       400:
+ *         description: Verification failed
+ */
 router.post('/verify', isLoggedIn, async (req, res, next) => {
     try {
         const {
@@ -179,7 +249,18 @@ router.post('/verify', isLoggedIn, async (req, res, next) => {
     }
 });
 
-// Membership checkout
+/**
+ * @swagger
+ * /payment/membership:
+ *   get:
+ *     tags: [Payments]
+ *     summary: Create a membership payment order
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Razorpay order for membership
+ */
 router.get('/membership', isLoggedIn, async (req, res, next) => {
     try {
         const { orderId, amount } = await paymentController.createMembershipOrder();
@@ -196,7 +277,33 @@ router.get('/membership', isLoggedIn, async (req, res, next) => {
     }
 });
 
-// Verify Membership
+/**
+ * @swagger
+ * /payment/membership/verify:
+ *   post:
+ *     tags: [Payments]
+ *     summary: Verify membership payment
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               razorpay_order_id:
+ *                 type: string
+ *               razorpay_payment_id:
+ *                 type: string
+ *               razorpay_signature:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Membership activated
+ *       400:
+ *         description: Verification failed
+ */
 router.post('/membership/verify', isLoggedIn, async (req, res, next) => {
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
@@ -216,7 +323,43 @@ router.post('/membership/verify', isLoggedIn, async (req, res, next) => {
     }
 });
 
-// Full wallet payment (no Razorpay needed)
+/**
+ * @swagger
+ * /payment/wallet-only:
+ *   post:
+ *     tags: [Payments]
+ *     summary: Full wallet payment (no Razorpay)
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - propertyId
+ *               - checkIn
+ *               - checkOut
+ *               - guests
+ *               - walletAmount
+ *             properties:
+ *               propertyId:
+ *                 type: string
+ *               checkIn:
+ *                 type: string
+ *               checkOut:
+ *                 type: string
+ *               guests:
+ *                 type: integer
+ *               walletAmount:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Booking confirmed with wallet payment
+ *       400:
+ *         description: Insufficient balance or missing fields
+ */
 router.post('/wallet-only', isLoggedIn, async (req, res, next) => {
     console.log('🔥 WALLET-ONLY ROUTE HIT! 🔥');
     console.log('Request body:', JSON.stringify(req.body, null, 2));

@@ -3,7 +3,38 @@ const router = express.Router();
 const ContactMessage = require('../models/contactMessage');
 const wrapAsync = require('../utils/wrapAsync');
 
-// POST /api/contact - Submit a new contact message
+/**
+ * @swagger
+ * /api/contact:
+ *   post:
+ *     tags: [Contact]
+ *     summary: Submit a new contact message
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - message
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               subject:
+ *                 type: string
+ *               message:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Message sent successfully
+ *       400:
+ *         description: Missing required fields
+ */
 router.post('/', wrapAsync(async (req, res) => {
     const { name, email, subject, message } = req.body;
     

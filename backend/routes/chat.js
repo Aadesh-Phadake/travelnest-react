@@ -6,22 +6,40 @@ const Listing = require('../models/listing');
 const { isLoggedIn } = require('../middleware');
 const wrapAsync = require('../utils/wrapAsync');
 
-// Get or create chat for a booking (Traveler)
+/**
+ * @swagger
+ * /api/chat/booking/{bookingId}:
+ *   get:
+ *     tags: [Chat]
+ *     summary: Get or create chat for a booking (Traveler)
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookingId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Chat object
+ *       404:
+ *         description: Booking not found
+ *       403:
+ *         description: Not authorized
+ */
 router.get('/booking/:bookingId', isLoggedIn, wrapAsync(async (req, res) => {
     const { bookingId } = req.params;
     
-    // Find the booking
     const booking = await Booking.findById(bookingId).populate('listing');
     if (!booking) {
         return res.status(404).json({ success: false, error: 'Booking not found' });
     }
     
-    // Verify user is the traveler for this booking
     if (booking.user.toString() !== req.user._id.toString()) {
         return res.status(403).json({ success: false, error: 'Not authorized' });
     }
     
-    // Find existing chat or create new one
     let chat = await Chat.findOne({ booking: bookingId })
         .populate('traveler', 'username email')
         .populate('manager', 'username email')
@@ -29,7 +47,6 @@ router.get('/booking/:bookingId', isLoggedIn, wrapAsync(async (req, res) => {
         .populate('messages.sender', 'username');
     
     if (!chat) {
-        // Get the listing to find the manager
         const listing = await Listing.findById(booking.listing._id || booking.listing);
         
         chat = new Chat({
@@ -41,7 +58,6 @@ router.get('/booking/:bookingId', isLoggedIn, wrapAsync(async (req, res) => {
         });
         await chat.save();
         
-        // Populate after save
         chat = await Chat.findById(chat._id)
             .populate('traveler', 'username email')
             .populate('manager', 'username email')
@@ -49,7 +65,6 @@ router.get('/booking/:bookingId', isLoggedIn, wrapAsync(async (req, res) => {
             .populate('messages.sender', 'username');
     }
     
-    // Mark messages as read by traveler
     if (chat.unreadByTraveler > 0) {
         chat.messages.forEach(msg => {
             if (msg.senderRole === 'manager') {
@@ -63,7 +78,37 @@ router.get('/booking/:bookingId', isLoggedIn, wrapAsync(async (req, res) => {
     res.json({ success: true, chat });
 }));
 
-// Send message (Traveler)
+/**
+ * @swagger
+ * /api/chat/booking/{bookingId}/message:
+ *   post:
+ *     tags: [Chat]
+ *     summary: Send a message as traveler
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookingId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - message
+ *             properties:
+ *               message:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Message sent
+ *       400:
+ *         description: Message is required
+ */
 router.post('/booking/:bookingId/message', isLoggedIn, wrapAsync(async (req, res) => {
     const { bookingId } = req.params;
     const { message } = req.body;
@@ -72,18 +117,15 @@ router.post('/booking/:bookingId/message', isLoggedIn, wrapAsync(async (req, res
         return res.status(400).json({ success: false, error: 'Message is required' });
     }
     
-    // Find the booking
     const booking = await Booking.findById(bookingId);
     if (!booking) {
         return res.status(404).json({ success: false, error: 'Booking not found' });
     }
     
-    // Verify user is the traveler
     if (booking.user.toString() !== req.user._id.toString()) {
         return res.status(403).json({ success: false, error: 'Not authorized' });
     }
     
-    // Find or create chat
     let chat = await Chat.findOne({ booking: bookingId });
     
     if (!chat) {
@@ -97,7 +139,6 @@ router.post('/booking/:bookingId/message', isLoggedIn, wrapAsync(async (req, res
         });
     }
     
-    // Add message
     chat.messages.push({
         sender: req.user._id,
         senderRole: 'traveler',
@@ -110,7 +151,6 @@ router.post('/booking/:bookingId/message', isLoggedIn, wrapAsync(async (req, res
     
     await chat.save();
     
-    // Return the new message
     const newMessage = chat.messages[chat.messages.length - 1];
     
     res.json({ 
@@ -125,13 +165,22 @@ router.post('/booking/:bookingId/message', isLoggedIn, wrapAsync(async (req, res
     });
 }));
 
-// Get all chats for manager
+/**
+ * @swagger
+ * /api/chat/manager/all:
+ *   get:
+ *     tags: [Chat]
+ *     summary: Get all chats for manager
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of chat objects
+ */
 router.get('/manager/all', isLoggedIn, wrapAsync(async (req, res) => {
-    // Get all listings owned by this manager
     const managerListings = await Listing.find({ owner: req.user._id }, '_id');
     const listingIds = managerListings.map(l => l._id);
     
-    // Find all chats for these listings
     const chats = await Chat.find({ listing: { $in: listingIds } })
         .populate('traveler', 'username email')
         .populate('listing', 'title images location')
@@ -141,7 +190,26 @@ router.get('/manager/all', isLoggedIn, wrapAsync(async (req, res) => {
     res.json({ success: true, chats });
 }));
 
-// Get single chat for manager
+/**
+ * @swagger
+ * /api/chat/manager/{chatId}:
+ *   get:
+ *     tags: [Chat]
+ *     summary: Get a single chat for manager
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chatId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Chat object
+ *       404:
+ *         description: Chat not found
+ */
 router.get('/manager/:chatId', isLoggedIn, wrapAsync(async (req, res) => {
     const { chatId } = req.params;
     
@@ -156,12 +224,10 @@ router.get('/manager/:chatId', isLoggedIn, wrapAsync(async (req, res) => {
         return res.status(404).json({ success: false, error: 'Chat not found' });
     }
     
-    // Verify user is the manager
     if (chat.manager._id.toString() !== req.user._id.toString()) {
         return res.status(403).json({ success: false, error: 'Not authorized' });
     }
     
-    // Mark messages as read by manager
     if (chat.unreadByManager > 0) {
         chat.messages.forEach(msg => {
             if (msg.senderRole === 'traveler') {
@@ -175,7 +241,35 @@ router.get('/manager/:chatId', isLoggedIn, wrapAsync(async (req, res) => {
     res.json({ success: true, chat });
 }));
 
-// Send message (Manager)
+/**
+ * @swagger
+ * /api/chat/manager/{chatId}/message:
+ *   post:
+ *     tags: [Chat]
+ *     summary: Send a message as manager
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chatId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - message
+ *             properties:
+ *               message:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Message sent
+ */
 router.post('/manager/:chatId/message', isLoggedIn, wrapAsync(async (req, res) => {
     const { chatId } = req.params;
     const { message } = req.body;
@@ -190,12 +284,10 @@ router.post('/manager/:chatId/message', isLoggedIn, wrapAsync(async (req, res) =
         return res.status(404).json({ success: false, error: 'Chat not found' });
     }
     
-    // Verify user is the manager
     if (chat.manager.toString() !== req.user._id.toString()) {
         return res.status(403).json({ success: false, error: 'Not authorized' });
     }
     
-    // Add message
     chat.messages.push({
         sender: req.user._id,
         senderRole: 'manager',
@@ -208,7 +300,6 @@ router.post('/manager/:chatId/message', isLoggedIn, wrapAsync(async (req, res) =
     
     await chat.save();
     
-    // Return the new message
     const newMessage = chat.messages[chat.messages.length - 1];
     
     res.json({ 
@@ -223,7 +314,18 @@ router.post('/manager/:chatId/message', isLoggedIn, wrapAsync(async (req, res) =
     });
 }));
 
-// Get unread count for manager (for badge)
+/**
+ * @swagger
+ * /api/chat/manager/unread/count:
+ *   get:
+ *     tags: [Chat]
+ *     summary: Get unread message count for manager
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Unread count
+ */
 router.get('/manager/unread/count', isLoggedIn, wrapAsync(async (req, res) => {
     const managerListings = await Listing.find({ owner: req.user._id }, '_id');
     const listingIds = managerListings.map(l => l._id);

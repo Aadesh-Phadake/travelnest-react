@@ -7,13 +7,59 @@ const { isLoggedIn, requireTraveller } = require('../middleware');
 router.use(isLoggedIn);
 router.use(requireTraveller);
 
-// GET /wallet - Get wallet balance and points
+/**
+ * @swagger
+ * /wallet:
+ *   get:
+ *     tags: [Wallet]
+ *     summary: Get wallet balance and reward points
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Wallet balance and points
+ *       401:
+ *         description: Not authenticated
+ */
 router.get('/', walletController.getWallet);
 
-// POST /wallet/redeem - Redeem points for discount
+/**
+ * @swagger
+ * /wallet/redeem:
+ *   post:
+ *     tags: [Wallet]
+ *     summary: Redeem reward points for discount
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               points:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Points redeemed successfully
+ *       400:
+ *         description: Insufficient points
+ */
 router.post('/redeem', walletController.redeemPoints);
 
-// GET /wallet/transactions - Get transaction history
+/**
+ * @swagger
+ * /wallet/transactions:
+ *   get:
+ *     tags: [Wallet]
+ *     summary: Get wallet transaction history
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of transactions
+ */
 router.get('/transactions', walletController.getTransactions);
 
 module.exports = router;
