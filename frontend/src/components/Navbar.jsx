@@ -12,7 +12,7 @@ const Navbar = () => {
     // Get User from Redux
     const { user } = useSelector((state) => state.auth);
     const dispatch = useDispatch();
-    
+
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
 
@@ -24,17 +24,17 @@ const Navbar = () => {
     return (
         <nav className="bg-white dark:bg-gray-800 border-b sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-               <div className="flex justify-between h-16">
-                   <div className="flex items-center gap-6">
+                <div className="flex justify-between h-16">
+                    <div className="flex items-center gap-6">
                         <Link to="/listings" className="flex items-center group">
                             <img src="/logo.jpg" alt="TravelNest Logo" className="h-10 w-auto object-contain" />
                         </Link>
                         <Link to="/listings" className="hidden md:block px-5 py-2 rounded-full font-bold text-gray-700 dark:text-gray-300 hover:text-primary hover:bg-[#FDF3EB] transition-all duration-200">
                             Explore
                         </Link>
-                   </div>
+                    </div>
 
-                   <div className="hidden md:flex items-center space-x-6">
+                    <div className="hidden md:flex items-center space-x-6">
                         <button onClick={toggleTheme} className="text-gray-600 dark:text-gray-300 hover:text-primary transition">
                             {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
                         </button>
@@ -54,20 +54,20 @@ const Navbar = () => {
                                 {user.role === 'manager' && (
                                     <Link to="/owner-dashboard" className="text-gray-600 hover:text-primary font-medium transition">Dashboard</Link>
                                 )}
-                                {(user.role === 'admin' || user.username === 'TravelNest') && (
+                                {(user.role === 'admin' || user.role === 'staff' || user.username === 'TravelNest') && (
                                     <Link to="/admin" className="text-primary font-bold hover:underline transition">Admin Panel</Link>
                                 )}
                                 <button onClick={handleLogout} className="text-gray-500 dark:text-gray-400 hover:text-red-500 font-medium transition">Logout</button>
                             </div>
                         )}
-                   </div>
+                    </div>
 
-                   <div className="md:hidden flex items-center">
+                    <div className="md:hidden flex items-center">
                         <button onClick={() => setIsOpen(!isOpen)} className="text-gray-700 dark:text-gray-300 hover:text-primary p-2">
                             {isOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
-                   </div>
-               </div>
+                    </div>
+                </div>
             </div>
 
             {isOpen && (

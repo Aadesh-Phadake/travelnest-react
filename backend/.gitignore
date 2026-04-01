@@ -4,6 +4,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Log files
+logs.txt
+error logs.txt
+*.log
+
 # Environment variables
 .env
 .env.local
@@ -114,3 +119,7 @@ Thumbs.db
 
 # Uploads directory (temporary files before Cloudinary upload)
 uploads/
+
+# Scripts with hardcoded credentials
+create-admin-user.js
+create-staff-user.js

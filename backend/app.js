@@ -7,6 +7,10 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const MongoStore = require('connect-mongo');
 const cors = require('cors'); // IMPORT CORS
+const morgan = require('morgan');
+const fs = require('fs');
+const path = require('path');
+const errorLogger = require('./utils/logger');
 
 // Models
 const User = require('./models/user');
@@ -29,7 +33,10 @@ const PORT = process.env.PORT || 8080;
 const MONGO_URL = process.env.MONGO_URL;
 
 // Middleware setup
+// Create write stream for Morgan logs
+const accessLogStream = fs.createWriteStream(path.join(__dirname, 'logs.txt'), { flags: 'a' });
 // 1. Allow requests from your React App (Assuming it runs on port 5173 or 3000)
+app.use(morgan('combined', { stream: accessLogStream }));
 app.use(cors({
     origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'], // Support multiple ports
     credentials: true // Essential for maintaining sessions/cookies with React
@@ -97,15 +104,36 @@ app.get('/', (req, res) => {
     res.send("API is running");
 });
 
+// Test route - visit http://localhost:8080/test-error to verify Winston logging
+app.get('/test-error', (req, res, next) => {
+    next(new Error('This is a test error to verify Winston logging!'));
+});
+
 // 404 Handler
 app.all('*', (req, res, next) => {
+    errorLogger.error({
+        message: 'Page Not Found',
+        statusCode: 404,
+        method: req.method,
+        url: req.originalUrl,
+    });
     res.status(404).json({ message: 'Page Not Found' });
 });
 
 // Error Handler - MUST RETURN JSON NOW, NOT RENDER HTML
 app.use((err, req, res, next) => {
     const { statusCode = 500, message = 'Something went wrong' } = err;
-    res.status(statusCode).json({ 
+
+    // Log error to error logs.txt via Winston
+    errorLogger.error({
+        message: message,
+        statusCode: statusCode,
+        method: req.method,
+        url: req.originalUrl,
+        stack: err.stack
+    });
+
+    res.status(statusCode).json({
         error: true,
         message,
         stack: process.env.NODE_ENV === 'development' ? err.stack : undefined

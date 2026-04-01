@@ -6,9 +6,9 @@ const Review = require('./models/review');
 module.exports.isLoggedIn = (req, res, next) => {
     if (!req.isAuthenticated()) {
         // React needs a 401 status to know it should show the login modal/page
-        return res.status(401).json({ 
+        return res.status(401).json({
             message: 'Login required to perform this action.',
-            redirect: '/login' 
+            redirect: '/login'
         });
     }
     next();
@@ -17,7 +17,7 @@ module.exports.isLoggedIn = (req, res, next) => {
 module.exports.isOwner = async (req, res, next) => {
     const { id } = req.params;
     const listing = await Listing.findById(id);
-    
+
     if (!listing) {
         return res.status(404).json({ message: "Listing not found" });
     }
@@ -36,9 +36,9 @@ module.exports.isOwnerOrAdmin = async (req, res, next) => {
     if (!listing) {
         return res.status(404).json({ message: "Listing not found" });
     }
-    
+
     // Check if user is the owner of the listing or has admin role
-    if (!listing.owner.equals(req.user._id) && req.user.role !== 'admin') {
+    if (!listing.owner.equals(req.user._id) && req.user.role !== 'admin' && req.user.role !== 'staff') {
         return res.status(403).json({ message: 'You do not have permission to do that!' });
     }
 
@@ -68,7 +68,7 @@ module.exports.validateReview = (req, res, next) => {
 module.exports.isAuthor = async (req, res, next) => {
     const { id, reviewId } = req.params;
     const review = await Review.findById(reviewId);
-    
+
     if (!review) {
         return res.status(404).json({ message: "Review not found" });
     }
@@ -85,11 +85,11 @@ module.exports.requireRole = (allowedRoles) => {
         if (!req.user) {
             return res.status(401).json({ message: 'You must be logged in' });
         }
-        
+
         if (!allowedRoles.includes(req.user.role)) {
             return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
         }
-        
+
         next();
     };
 };
@@ -110,13 +110,17 @@ module.exports.requireManager = (req, res, next) => {
     next();
 };
 
-module.exports.requireAdmin = module.exports.requireRole(['admin']);
+// Admin can view dashboard, staff can view + perform operations
+module.exports.requireAdmin = module.exports.requireRole(['admin', 'staff']);
+
+// Staff-only: for mutation operations (delete, approve, reject, membership toggle)
+module.exports.requireStaff = module.exports.requireRole(['staff']);
 
 module.exports.requireManagerOrAdmin = (req, res, next) => {
     if (!req.user) {
         return res.status(401).json({ message: 'You must be logged in' });
     }
-    if (req.user.role === 'admin') {
+    if (req.user.role === 'admin' || req.user.role === 'staff') {
         return next();
     }
     if (req.user.role === 'manager') {

@@ -13,28 +13,28 @@ const Request = require('../models/request');
 module.exports.signup = async (req, res) => {
     try {
         let { username, email, password, role } = req.body;
-        
+
         if (!['traveller', 'manager'].includes(role)) {
             return res.status(400).json({ message: 'Invalid account type.' });
         }
-        
+
         const isManager = role === 'manager';
         // Managers must be approved by an admin before accessing manager features
-        let user = new User({ 
-            username, 
-            email, 
+        let user = new User({
+            username,
+            email,
             role,
             isApproved: !isManager
         });
         let registeredUser = await User.register(user, password);
-        
+
         req.login(registeredUser, err => {
             if (err) {
                 return res.status(500).json({ message: 'Login after signup failed' });
             }
-            return res.status(201).json({ 
-                message: 'Welcome to TravelNest!', 
-                user: registeredUser 
+            return res.status(201).json({
+                message: 'Welcome to TravelNest!',
+                user: registeredUser
             });
         });
     } catch (e) {
@@ -45,9 +45,9 @@ module.exports.signup = async (req, res) => {
 // ✅ Handle login
 module.exports.login = async (req, res) => {
     // Passport middleware has already authenticated the user
-    res.status(200).json({ 
-        message: 'Welcome back!', 
-        user: req.user 
+    res.status(200).json({
+        message: 'Welcome back!',
+        user: req.user
     });
 };
 
@@ -98,7 +98,7 @@ module.exports.updateProfile = async (req, res) => {
             if (req.body.hotelName) updates.hotelName = req.body.hotelName;
             if (req.body.hotelAddress) updates.hotelAddress = req.body.hotelAddress;
             if (req.body.phone) updates.phone = req.body.phone;
-        } else if (req.user.role === 'admin') {
+        } else if (req.user.role === 'admin' || req.user.role === 'staff') {
             if (req.body.name) updates.name = req.body.name;
             if (req.body.email) updates.email = req.body.email;
             if (req.body.systemAccess) updates.systemAccess = req.body.systemAccess;
@@ -167,7 +167,7 @@ module.exports.activateMembership = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        
+
         const now = new Date();
         const expires = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
         user.isMember = true;
@@ -179,9 +179,9 @@ module.exports.activateMembership = async (req, res) => {
         }
 
         await user.save();
-        res.status(200).json({ 
-            message: 'Membership activated for 30 days!', 
-            user 
+        res.status(200).json({
+            message: 'Membership activated for 30 days!',
+            user
         });
     } catch (e) {
         res.status(500).json({ message: 'Could not activate membership' });
@@ -217,7 +217,7 @@ module.exports.createBooking = async (req, res) => {
         const numGuests = parseInt(guests) || 1;
         if (checkInDate && checkOutDate && !isNaN(checkInDate.getTime()) && !isNaN(checkOutDate.getTime())) {
             nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
-            
+
             if (nights > 0) {
                 let baseAmount = listing.price * nights;
                 if (numGuests > 2) {
@@ -226,7 +226,7 @@ module.exports.createBooking = async (req, res) => {
                 }
 
                 const isActiveMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
-                serviceFee = isActiveMember ? 0 : Math.round(baseAmount * 0.1);
+                serviceFee = isActiveMember ? 0 : Math.round(baseAmount * 0.05);
                 totalAmount = baseAmount + serviceFee;
             }
         }
@@ -234,6 +234,9 @@ module.exports.createBooking = async (req, res) => {
         const booking = new Booking({
             user: req.user._id,
             listing: listing._id,
+            listingTitle: listing.title || '',
+            listingLocation: listing.location || '',
+            listingCountry: listing.country || '',
             checkIn,
             checkOut,
             guests: parseInt(guests) || 1,
@@ -243,7 +246,7 @@ module.exports.createBooking = async (req, res) => {
 
         await booking.save();
         res.status(201).json({ message: 'Booking confirmed successfully!', booking });
-        
+
     } catch (e) {
         res.status(500).json({ message: "Error creating booking", error: e.message });
     }
@@ -266,7 +269,7 @@ module.exports.deleteBooking = async (req, res) => {
     try {
         const booking = await Booking.findById(req.params.id);
         if (!booking || !booking.user.equals(req.user._id)) {
-             return res.status(403).json({ message: "Unauthorized" });
+            return res.status(403).json({ message: "Unauthorized" });
         }
 
         // Restore rooms if room allocation exists
@@ -276,10 +279,10 @@ module.exports.deleteBooking = async (req, res) => {
                 listing.roomTypes.single = (listing.roomTypes.single || 0) + (booking.roomAllocation.single || 0);
                 listing.roomTypes.double = (listing.roomTypes.double || 0) + (booking.roomAllocation.double || 0);
                 listing.roomTypes.triple = (listing.roomTypes.triple || 0) + (booking.roomAllocation.triple || 0);
-                
+
                 // Update total rooms
                 listing.rooms = (listing.roomTypes.single || 0) + (listing.roomTypes.double || 0) + (listing.roomTypes.triple || 0);
-                
+
                 await listing.save();
                 console.log(`✅ Rooms restored for booking ${booking._id}`);
             }
@@ -287,16 +290,16 @@ module.exports.deleteBooking = async (req, res) => {
 
         await Booking.findByIdAndDelete(req.params.id);
         res.status(200).json({ message: "Booking cancelled successfully" });
-    } catch(e) {
+    } catch (e) {
         res.status(500).json({ message: e.message });
     }
 };
 
 // Example for ownerDashboard:
 module.exports.ownerDashboard = async (req, res) => {
-   // ... fetch your data ...
-   // instead of res.render('dashboard', { data })
-   // do: res.status(200).json({ data });
+    // ... fetch your data ...
+    // instead of res.render('dashboard', { data })
+    // do: res.status(200).json({ data });
 };
 
 // Keep your exports for the functions you define!
