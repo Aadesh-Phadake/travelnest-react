@@ -11,6 +11,8 @@ const morgan = require('morgan');
 const fs = require('fs');
 const path = require('path');
 const errorLogger = require('./utils/logger');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger');
 
 // Models
 const User = require('./models/user');
@@ -108,6 +110,12 @@ app.get('/', (req, res) => {
 app.get('/test-error', (req, res, next) => {
     next(new Error('This is a test error to verify Winston logging!'));
 });
+
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'TravelNest API Docs',
+}));
 
 // 404 Handler
 app.all('*', (req, res, next) => {
