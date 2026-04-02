@@ -201,6 +201,10 @@ module.exports.createBooking = async (req, res) => {
 
         const { checkIn, checkOut, guests } = req.body;
 
+        if (!checkIn || !checkOut) {
+            return res.status(400).json({ message: 'checkIn and checkOut are required.' });
+        }
+
         const parseDate = (dateStr) => {
             if (!dateStr) return null;
             const date = new Date(dateStr);
@@ -210,26 +214,33 @@ module.exports.createBooking = async (req, res) => {
         const checkInDate = parseDate(checkIn);
         const checkOutDate = parseDate(checkOut);
 
+        if (!checkInDate || !checkOutDate) {
+            return res.status(400).json({ message: 'Invalid checkIn/checkOut date format.' });
+        }
+
         let nights = 0;
         let serviceFee = 0; // platform commission
         let totalAmount = 0;
 
-        const numGuests = parseInt(guests) || 1;
-        if (checkInDate && checkOutDate && !isNaN(checkInDate.getTime()) && !isNaN(checkOutDate.getTime())) {
-            nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
-
-            if (nights > 0) {
-                let baseAmount = listing.price * nights;
-                if (numGuests > 2) {
-                    const additionalGuestFee = (numGuests - 2) * 500 * nights;
-                    baseAmount += additionalGuestFee;
-                }
-
-                const isActiveMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
-                serviceFee = isActiveMember ? 0 : Math.round(baseAmount * 0.05);
-                totalAmount = baseAmount + serviceFee;
-            }
+        const numGuests = parseInt(guests, 10) || 1;
+        if (numGuests < 1 || numGuests > 5) {
+            return res.status(400).json({ message: 'guests must be between 1 and 5.' });
         }
+
+        nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+        if (nights <= 0) {
+            return res.status(400).json({ message: 'checkOut must be after checkIn.' });
+        }
+
+        let baseAmount = listing.price * nights;
+        if (numGuests > 2) {
+            const additionalGuestFee = (numGuests - 2) * 500 * nights;
+            baseAmount += additionalGuestFee;
+        }
+
+        const isActiveMember = req.user && req.user.isMember && req.user.membershipExpiresAt && new Date(req.user.membershipExpiresAt) > new Date();
+        serviceFee = isActiveMember ? 0 : Math.round(baseAmount * 0.05);
+        totalAmount = baseAmount + serviceFee;
 
         const booking = new Booking({
             user: req.user._id,

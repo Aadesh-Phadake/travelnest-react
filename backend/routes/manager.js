@@ -12,17 +12,26 @@ const wrapAsync = require('../utils/wrapAsync');
  * /manager/dashboard:
  *   get:
  *     tags: [Manager]
- *     summary: Get manager dashboard page
+ *     summary: Get manager dashboard metadata
  *     security:
  *       - cookieAuth: []
  *     responses:
  *       200:
- *         description: Dashboard rendered
+ *         description: Dashboard metadata (UI is handled by React frontend)
  *       403:
  *         description: Manager access required
  */
 router.get('/dashboard', isLoggedIn, requireManager, wrapAsync(async (req, res) => {
-    res.render('manager/dashboard', { currentUser: req.user });
+    res.status(200).json({
+        success: true,
+        message: 'Manager dashboard is handled by the frontend',
+        currentUser: {
+            id: req.user?._id,
+            username: req.user?.username,
+            email: req.user?.email,
+            role: req.user?.role,
+        }
+    });
 }));
 
 
