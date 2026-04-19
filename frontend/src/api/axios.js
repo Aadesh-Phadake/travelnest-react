@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
     // 1. The Destination
-    baseURL: 'http://localhost:8080', 
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080', 
     // This saves you time. 
     // Instead of typing: axios.get('http://localhost:8080/listings')
     // You just type:     api.get('/listings')
