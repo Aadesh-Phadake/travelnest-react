@@ -239,9 +239,37 @@ router.post('/profile/cancel/confirm/:id', isLoggedIn, wrapAsync(userController.
  *         schema:
  *           type: string
  *         description: Listing ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - checkIn
+ *               - checkOut
+ *               - guests
+ *             properties:
+ *               checkIn:
+ *                 type: string
+ *                 example: "2026-04-10"
+ *               checkOut:
+ *                 type: string
+ *                 example: "2026-04-12"
+ *               guests:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *                 example: 2
  *     responses:
- *       200:
+ *       201:
  *         description: Booking created
+ *       400:
+ *         description: Invalid input (missing/invalid dates or guests)
+ *       401:
+ *         description: Not authenticated
+ *       404:
+ *         description: Listing not found
  */
 router.post('/listings/:id/book', isLoggedIn, wrapAsync(userController.createBooking));
 
