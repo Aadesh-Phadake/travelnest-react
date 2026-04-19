@@ -1,0 +1,49 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Tests
+tests
+coverage
+jest.config.js
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs.txt
+error logs.txt
+
+# Documentation
+*.md
+AJAX_CHAT_FEATURES.md
+CHAT_FEATURES.md
+
+# Upload temp files
+uploads
+
+# Scripts
+create-staff-user.js
+create-admin-user.js
+assign-rooms.js
+backfill-platform-commission.js
+migrate-user-roles.js
+test-login.js
+
+# Misc
+cookies.txt

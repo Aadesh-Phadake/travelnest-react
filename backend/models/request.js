@@ -39,6 +39,11 @@ const requestSchema = new Schema({
     }
 });
 
+// ===== DATABASE INDEXES =====
+requestSchema.index({ user: 1 });            // User request lookups
+requestSchema.index({ listing: 1 });         // Listing request lookups
+requestSchema.index({ status: 1 });          // Filter by status
+
 module.exports = mongoose.model('Request', requestSchema);
 
 

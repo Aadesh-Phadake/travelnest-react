@@ -25,5 +25,9 @@ const transactionSchema = new Schema({
     timestamps: true
 });
 
+// ===== DATABASE INDEXES =====
+transactionSchema.index({ user: 1, createdAt: -1 });  // User transaction history sorted
+transactionSchema.index({ type: 1 });                  // Filter by transaction type
+
 const Transaction = mongoose.model('Transaction', transactionSchema);
 module.exports = Transaction;

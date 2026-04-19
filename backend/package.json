@@ -7,7 +7,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --coverage --forceExit --detectOpenHandles",
     "start": "npx kill-port 8080 && npx nodemon app.js"
   },
   "keywords": [],
@@ -27,6 +27,7 @@
     "express-router": "^0.0.1",
     "express-session": "^1.18.1",
     "ffsd-project": "file:",
+    "ioredis": "^5.10.1",
     "joi": "^17.13.3",
     "method-override": "^3.0.0",
     "mongoose": "^8.10.1",
@@ -41,5 +42,10 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "jest": "^30.3.0",
+    "mongodb-memory-server": "^11.0.1",
+    "supertest": "^7.2.2"
   }
 }

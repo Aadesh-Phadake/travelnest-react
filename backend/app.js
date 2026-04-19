@@ -13,6 +13,7 @@ const path = require('path');
 const errorLogger = require('./utils/logger');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
+const { initRedis } = require('./services/redisClient'); // Redis integration
 
 // Models
 const User = require('./models/user');
@@ -47,6 +48,18 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Request timing middleware — logs response time for every request
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        if (duration > 500) {
+            console.warn(`⚠️  Slow request: ${req.method} ${req.originalUrl} took ${duration}ms`);
+        }
+    });
+    next();
+});
+
 // MongoDB connection
 async function main() {
     try {
@@ -57,6 +70,9 @@ async function main() {
     }
 }
 main();
+
+// Redis connection (graceful — app works without Redis)
+initRedis();
 
 // Session store
 const store = MongoStore.create({

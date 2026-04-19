@@ -1,20 +1,52 @@
+/**
+ * Listing Controller
+ * 
+ * Handles all CRUD operations for hotel listings.
+ * 
+ * Optimizations:
+ *   - Redis caching with cache-first strategy (TTL: 60s)
+ *   - Cache invalidation on create/update/delete
+ *   - .lean() for read-only queries (returns plain JS objects)
+ *   - Pagination support (page, limit query params)
+ *   - console.time() performance benchmarks
+ *   - Dual-strategy search: regex for partial, $text for full-text
+ */
+
 const Listing = require('../models/listing');
 const expressError = require('../utils/expressError');
+const { getCache, setCache, invalidateCache, buildCacheKey } = require('../services/cacheService');
 
+// ===== GET ALL LISTINGS (with search, filters, pagination, caching) =====
 module.exports.index = async (req, res) => {
     try {
-        let { search, price, rating } = req.query;
-        let filter = {};
+        console.time('⏱️ GET /listings');
+        let { search, price, rating, page, limit } = req.query;
 
-        // Search Logic
-        if (search) {
-            filter.$or = [
-                { title: { $regex: search, $options: 'i' } },
-                { location: { $regex: search, $options: 'i' } }
-            ];
+        // --- Cache-first strategy ---
+        const cacheKey = buildCacheKey('listings', { search, price, rating, page, limit });
+        const cached = await getCache(cacheKey);
+        if (cached) {
+            console.timeEnd('⏱️ GET /listings');
+            return res.status(200).json(cached);
         }
 
-        // Price Filter Logic
+        let filter = {};
+
+        // --- Search Logic (dual-strategy) ---
+        if (search) {
+            if (search.length < 3) {
+                // Short queries: use $regex for partial matching (e.g., "Del" → "Delhi")
+                filter.$or = [
+                    { title: { $regex: search, $options: 'i' } },
+                    { location: { $regex: search, $options: 'i' } }
+                ];
+            } else {
+                // Longer queries: use MongoDB $text for relevance-scored full-text search
+                filter.$text = { $search: search };
+            }
+        }
+
+        // --- Price Filter Logic ---
         if (price) {
             if (price === '0-1000') {
                 filter.price = { $lte: 1000 };
@@ -27,16 +59,50 @@ module.exports.index = async (req, res) => {
             }
         }
 
-        // Only show approved listings (treat missing status as approved for older data)
-        filter.$or = [
-            { status: { $exists: false } },
-            { status: 'approved' }
-        ];
+        // --- Only show approved listings (backwards compatible) ---
+        // When using $text search, we can't combine with another $or on the same level
+        // that doesn't use $text, so we handle this differently.
+        if (filter.$text) {
+            // With $text, use $and to combine status filter
+            filter.$and = [
+                { $or: [{ status: { $exists: false } }, { status: 'approved' }] }
+            ];
+        } else if (filter.$or) {
+            // Already have $or from search, combine with $and
+            const searchOr = filter.$or;
+            delete filter.$or;
+            filter.$and = [
+                { $or: searchOr },
+                { $or: [{ status: { $exists: false } }, { status: 'approved' }] }
+            ];
+        } else {
+            filter.$or = [
+                { status: { $exists: false } },
+                { status: 'approved' }
+            ];
+        }
 
-        // Fetch and Filter
-        let listings = await Listing.find(filter).populate('reviews');
+        // --- Pagination ---
+        const pageNum = Math.max(1, parseInt(page) || 1);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 50));
+        const skip = (pageNum - 1) * limitNum;
 
-        // Rating Filter (Done in memory because ratings are computed)
+        // --- Build query with optimizations ---
+        let query = Listing.find(filter);
+
+        // Add text score sorting if using $text search
+        if (filter.$text) {
+            query = query.select({ score: { $meta: 'textScore' } })
+                         .sort({ score: { $meta: 'textScore' } });
+        }
+
+        let listings = await query
+            .populate('reviews')
+            .skip(skip)
+            .limit(limitNum)
+            .lean(); // Returns plain JS objects — faster than Mongoose documents
+
+        // --- Rating Filter (in-memory since ratings are computed averages) ---
         if (rating) {
             listings = listings.filter(listing => {
                 if (listing.reviews && listing.reviews.length > 0) {
@@ -47,15 +113,36 @@ module.exports.index = async (req, res) => {
             });
         }
 
+        // Get total count for pagination metadata
+        const totalCount = await Listing.countDocuments(filter);
+
+        const response = {
+            listings,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total: totalCount,
+                pages: Math.ceil(totalCount / limitNum)
+            }
+        };
+
+        // Cache the response
+        await setCache(cacheKey, response, 60);
+
+        console.timeEnd('⏱️ GET /listings');
+
+        // Return just the listings array for backwards compatibility
+        // (frontend may expect an array directly)
         res.status(200).json(listings);
     } catch (e) {
+        console.timeEnd('⏱️ GET /listings');
         res.status(500).json({ message: "Error fetching listings", error: e.message });
     }
 };
 
+// ===== SEARCH LISTINGS =====
 module.exports.search = async (req, res) => {
-    // Re-using the index logic for consistency, but returning the specific format you had
-    // In a real API, you usually just use the index route with query params
+    // Re-using the index logic for consistency
     try {
         await module.exports.index(req, res);
     } catch (e) {
@@ -63,6 +150,7 @@ module.exports.search = async (req, res) => {
     }
 };
 
+// ===== CREATE LISTING =====
 module.exports.create = async (req, res, next) => {
     try {
         if (!req.body) {
@@ -88,6 +176,9 @@ module.exports.create = async (req, res, next) => {
         await listing.save();
         
         console.log('Listing created successfully:', listing._id, 'License:', listing.hotelLicense ? 'Saved' : 'Not saved');
+
+        // Invalidate listing caches since data changed
+        await invalidateCache('listings:*');
         
         res.status(201).json({ 
             message: 'Hotel listed successfully!', 
@@ -99,8 +190,11 @@ module.exports.create = async (req, res, next) => {
     }
 };
 
+// ===== SHOW SINGLE LISTING =====
 module.exports.show = async (req, res) => {
     try {
+        console.time(`⏱️ GET /listings/${req.params.id}`);
+
         const { sortBy } = req.query;
         let sortOption = {};
         
@@ -122,6 +216,7 @@ module.exports.show = async (req, res) => {
             .populate('owner', 'username email'); // Populate owner details
 
         if (!listing) {
+            console.timeEnd(`⏱️ GET /listings/${req.params.id}`);
             return res.status(404).json({ message: 'Hotel not found!' });
         }
 
@@ -136,6 +231,9 @@ module.exports.show = async (req, res) => {
 
         if (timeSinceLastUpdated >= twoMonths) {
             await Listing.findByIdAndDelete(req.params.id);
+            // Invalidate caches
+            await invalidateCache('listings:*');
+            console.timeEnd(`⏱️ GET /listings/${req.params.id}`);
             return res.status(410).json({ message: 'This hotel has been deleted due to inactivity.' });
         }
 
@@ -145,6 +243,8 @@ module.exports.show = async (req, res) => {
             }
         }
         // -----------------------------
+
+        console.timeEnd(`⏱️ GET /listings/${req.params.id}`);
 
         res.status(200).json({ 
             listing, 
@@ -158,6 +258,7 @@ module.exports.show = async (req, res) => {
     }
 };
 
+// ===== UPDATE LISTING =====
 module.exports.update = async (req, res, next) => {
     try {
         if (!req.body) return res.status(400).json({ message: 'Send valid data.' });
@@ -177,6 +278,9 @@ module.exports.update = async (req, res, next) => {
 
         console.log('Listing updated successfully. License:', updatedListing.hotelLicense ? 'Saved' : 'Not saved');
 
+        // Invalidate listing caches since data changed
+        await invalidateCache('listings:*');
+
         res.status(200).json({ 
             message: 'Hotel updated successfully!', 
             listing: updatedListing 
@@ -187,10 +291,14 @@ module.exports.update = async (req, res, next) => {
     }
 };
 
+// ===== DELETE LISTING =====
 module.exports.delete = async (req, res) => {
     try {
         const deletedListing = await Listing.findByIdAndDelete(req.params.id);
         if (!deletedListing) return res.status(404).json({ message: "Listing not found" });
+
+        // Invalidate listing caches since data changed
+        await invalidateCache('listings:*');
         
         res.status(200).json({ message: 'Hotel deleted successfully!' });
     } catch (e) {
@@ -198,14 +306,14 @@ module.exports.delete = async (req, res) => {
     }
 };
 
-// Renamed from renderPayment to calculateBookingCosts
+// ===== CALCULATE BOOKING COSTS =====
 // React calls this to preview the price details
 module.exports.renderPayment = async (req, res) => {
     try {
         const { id } = req.params;
         const { checkIn, checkOut, guests } = req.query;
 
-        const listing = await Listing.findById(id);
+        const listing = await Listing.findById(id).lean();
         if (!listing) {
             return res.status(404).json({ message: 'Listing not found' });
         }
