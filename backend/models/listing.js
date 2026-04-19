@@ -92,6 +92,13 @@ const ListingSchema = new schema({
     timestamps: true
 });
 
+// ===== DATABASE INDEXES =====
+ListingSchema.index({ title: 'text', location: 'text', description: 'text' }); // Full-text search
+ListingSchema.index({ owner: 1 });                    // Dashboard queries
+ListingSchema.index({ status: 1 });                   // Admin approval filtering
+ListingSchema.index({ location: 1, price: 1 });       // Search + price filter
+ListingSchema.index({ status: 1, createdAt: -1 });    // Approved listings sorted
+
 ListingSchema.post('findOneAndDelete', async function (listing) {
     if (listing) {
         await Review.deleteMany({

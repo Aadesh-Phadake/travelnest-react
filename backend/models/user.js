@@ -99,4 +99,10 @@ const userSchema = new schema({
 
 userSchema.plugin(passportLocalMongoose);
 
+// ===== DATABASE INDEXES =====
+// email is already unique-indexed by Mongoose unique:true
+userSchema.index({ role: 1 });                    // Admin queries filtering by role
+userSchema.index({ role: 1, createdAt: -1 });      // Sorted user lists by role
+userSchema.index({ isApproved: 1, role: 1 });      // Manager approval queries
+
 module.exports = mongoose.model('User', userSchema);

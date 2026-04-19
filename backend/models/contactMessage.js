@@ -11,6 +11,10 @@ const contactMessageSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+// ===== DATABASE INDEXES =====
+contactMessageSchema.index({ email: 1 });         // Contact message lookups by email
+contactMessageSchema.index({ createdAt: -1 });    // Sorted messages
+
 module.exports = mongoose.model('ContactMessage', contactMessageSchema);
 
 

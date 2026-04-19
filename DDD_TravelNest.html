@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDD Document — TravelNest</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            color: #1a1a2e;
+            background: #fff;
+            line-height: 1.7;
+            font-size: 13px;
+            padding: 40px 60px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a2e;
+            text-align: center;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2d3436;
+            margin-top: 36px;
+            margin-bottom: 14px;
+            padding-bottom: 6px;
+            border-bottom: 3px solid #4A90D9;
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #34495e;
+            margin-top: 24px;
+            margin-bottom: 10px;
+        }
+
+        h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-top: 18px;
+            margin-bottom: 8px;
+        }
+
+        p {
+            margin-bottom: 10px;
+            text-align: justify;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 18px;
+            color: #4A90D9;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .meta {
+            text-align: center;
+            font-size: 13px;
+            color: #777;
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0 18px 0;
+            font-size: 12.5px;
+        }
+
+        th {
+            background: #2d3436;
+            color: #fff;
+            padding: 8px 10px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        td {
+            padding: 7px 10px;
+            border-bottom: 1px solid #e0e0e0;
+            vertical-align: top;
+        }
+
+        tr:nth-child(even) td {
+            background: #f8f9fa;
+        }
+
+        tr:hover td {
+            background: #eef2ff;
+        }
+
+        .mermaid-container {
+            display: flex;
+            justify-content: center;
+            margin: 24px 0;
+            padding: 30px 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e8e8e8;
+            min-height: 350px;
+            overflow: visible;
+        }
+
+        .mermaid {
+            font-family: 'Inter', sans-serif !important;
+            min-width: 90%;
+        }
+
+        .mermaid svg {
+            max-width: 100% !important;
+            min-width: 700px;
+            height: auto !important;
+            min-height: 300px;
+        }
+
+        .mermaid-container.er-diagram {
+            min-height: 500px;
+        }
+
+        .mermaid-container.er-diagram svg {
+            min-height: 450px;
+            min-width: 800px;
+        }
+
+        .mermaid-container.aggregate-diagram {
+            min-height: 450px;
+        }
+
+        .mermaid-container.aggregate-diagram svg {
+            min-height: 400px;
+        }
+
+        .section-label {
+            display: inline-block;
+            background: #4A90D9;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 12px;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        strong {
+            color: #2c3e50;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #dfe6e9;
+            margin: 30px 0;
+        }
+
+        .page-break {
+            page-break-before: always;
+        }
+
+        @media print {
+            body {
+                padding: 15px 30px;
+                font-size: 12px;
+            }
+
+            h2 {
+                margin-top: 24px;
+            }
+
+            .mermaid-container {
+                break-inside: avoid;
+                padding: 20px;
+            }
+
+            .mermaid svg {
+                min-width: 600px !important;
+                min-height: 250px !important;
+            }
+
+            table {
+                break-inside: avoid;
+            }
+
+            .page-break {
+                page-break-before: always;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Domain-Driven Design Document</h1>
+    <div class="subtitle">TravelNest — Hotel Booking & Management Platform</div>
+    <div class="meta">
+
+        <strong>Team Lead:</strong> Aadesh Phadake
+    </div>
+
+    <hr>
+
+    <!-- ==================== SECTION 1 ==================== -->
+    <h2>1. Project Title & Description</h2>
+
+    <h3>Title</h3>
+    <p><strong>TravelNest — A Full-Stack Hotel Booking & Management Platform</strong></p>
+
+    <h3>Brief Description</h3>
+    <p>
+        TravelNest is a comprehensive hotel booking and management web application built using the MERN stack (MongoDB,
+        Express.js, React, Node.js). The platform serves three primary user roles — <strong>Travellers</strong>,
+        <strong>Hotel Managers</strong>, and <strong>Administrators</strong> — each with dedicated functionalities and
+        dashboards.
+    </p>
+    <p>
+        <strong>Travellers</strong> can search and browse hotel listings with advanced filters (city, price, rating),
+        book rooms with automated room allocation, make secure payments via Razorpay integration, write reviews, earn
+        reward points, activate premium memberships for discounted service fees, book taxis for local transportation,
+        and communicate with hotel managers through a real-time chat system.
+    </p>
+    <p>
+        <strong>Hotel Managers</strong> can register and manage their properties after admin approval, list hotels with
+        room types (single/double/triple), upload images via Cloudinary, set pricing, view booking reports grouped by
+        room type, and respond to traveller chats and service requests.
+    </p>
+    <p>
+        <strong>Administrators and Staff</strong> have a comprehensive dashboard for platform governance including user
+        management, hotel approval/rejection workflows, booking analytics with revenue tracking, platform commission
+        management, and staff delegation for operational tasks.
+    </p>
+    <p>
+        The system implements production-grade features including <strong>Redis caching</strong> with cache-first
+        strategy and TTL-based invalidation, <strong>MongoDB indexing</strong> with text search and compound indexes for
+        optimized queries, session management, role-based access control middleware, a wallet and rewards system with
+        transaction history, a cancellation policy with membership benefits, Swagger API documentation, Docker
+        containerization, and a CI pipeline via GitHub Actions.
+    </p>
+
+    <hr>
+    <div class="page-break"></div>
+
+    <!-- ==================== SECTION 2a ==================== -->
+    <h2>2. Domain-Driven Design</h2>
+
+    <h3>2a. Bounded Contexts</h3>
+    <p>The TravelNest domain is decomposed into <strong>six bounded contexts</strong>, each encapsulating a distinct
+        area of the business domain with its own ubiquitous language, models, and rules.</p>
+
+    <div class="mermaid-container">
+        <pre class="mermaid">
+graph TB
+    subgraph "TravelNest Domain"
+        IAC[" Identity & Access Context"]
+        LMC[" Listing Management Context"]
+        BC[" Booking Context"]
+        PWC[" Payment & Wallet Context"]
+        CC[" Communication Context"]
+        TC[" Transportation Context"]
+    end
+
+    IAC --- LMC
+    IAC --- BC
+    LMC --- BC
+    BC --- PWC
+    BC --- CC
+    LMC --- TC
+
+    style IAC fill:#f0f0f0,color:#2d3436,stroke:#999
+    style LMC fill:#f0f0f0,color:#2d3436,stroke:#999
+    style BC fill:#f0f0f0,color:#2d3436,stroke:#999
+    style PWC fill:#f0f0f0,color:#2d3436,stroke:#999
+    style CC fill:#f0f0f0,color:#2d3436,stroke:#999
+    style TC fill:#f0f0f0,color:#2d3436,stroke:#999
+        </pre>
+    </div>
+
+    <h4>Bounded Context Descriptions</h4>
+    <table>
+        <tr>
+            <th>#</th>
+            <th>Bounded Context</th>
+            <th>Responsibility</th>
+            <th>Key Domain Concepts</th>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td><strong>Identity & Access</strong></td>
+            <td>User registration, authentication, role management, membership, profile management, admin approval of
+                managers</td>
+            <td>User, Role, Membership, Approval</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td><strong>Listing Management</strong></td>
+            <td>Hotel CRUD, review management, search & filtering, image management, listing approval workflow,
+                inactivity monitoring</td>
+            <td>Listing, Review, Search, Approval</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td><strong>Booking</strong></td>
+            <td>Room reservation, room allocation, guest management, booking lifecycle (confirm/cancel), cancellation
+                policies</td>
+            <td>Booking, RoomAllocation, Cancellation</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td><strong>Payment & Wallet</strong></td>
+            <td>Payment processing (Razorpay), wallet balance, reward points, transaction history, refund processing
+            </td>
+            <td>Payment, Wallet, Transaction, Refund</td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td><strong>Communication</strong></td>
+            <td>Traveller-manager chat per booking, contact form messages, service/complaint requests</td>
+            <td>Chat, Message, ContactMessage, Request</td>
+        </tr>
+        <tr>
+            <td>6</td>
+            <td><strong>Transportation</strong></td>
+            <td>Taxi booking from hotel, fare calculation, ride management</td>
+            <td>TaxiBooking, Fare, Route</td>
+        </tr>
+    </table>
+
+    <hr>
+    <div class="page-break"></div>
+
+    <!-- ==================== SECTION 2b ==================== -->
+    <h3>2b. Context Mappings</h3>
+    <p>Context mappings define the relationships and integration patterns between bounded contexts.</p>
+
+    <div class="mermaid-container">
+        <pre class="mermaid">
+graph LR
+    IAC[" Identity & Access"]
+    LMC[" Listing Management"]
+    BC[" Booking"]
+    PWC[" Payment & Wallet"]
+    CC[" Communication"]
+    TC[" Transportation"]
+
+    IAC -- "U/D" --> LMC
+    IAC -- "U/D" --> BC
+    LMC -- "U/D" --> BC
+    BC -- "U/D" --> PWC
+    BC -- "SK" --> CC
+    IAC -- "U/D" --> CC
+    LMC -- "U/D" --> TC
+    IAC -- "U/D" --> TC
+    BC -- "U/D" --> TC
+    IAC -- "CF" --> PWC
+
+    style IAC fill:#f0f0f0,color:#2d3436,stroke:#999
+    style LMC fill:#f0f0f0,color:#2d3436,stroke:#999
+    style BC fill:#f0f0f0,color:#2d3436,stroke:#999
+    style PWC fill:#f0f0f0,color:#2d3436,stroke:#999
+    style CC fill:#f0f0f0,color:#2d3436,stroke:#999
+    style TC fill:#f0f0f0,color:#2d3436,stroke:#999
+        </pre>
+    </div>
+
+    <p><strong>Legend:</strong> U/D = Upstream/Downstream (Customer-Supplier), SK = Shared Kernel, CF = Conformist</p>
+
+    <h4>Context Mapping Table</h4>
+    <table>
+        <tr>
+            <th>Upstream Context</th>
+            <th>Downstream Context</th>
+            <th>Pattern</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>Identity & Access</td>
+            <td>Listing Management</td>
+            <td><strong>Customer/Supplier</strong></td>
+            <td>Listings require an authenticated User (owner). Identity context supplies User identity.</td>
+        </tr>
+        <tr>
+            <td>Identity & Access</td>
+            <td>Booking</td>
+            <td><strong>Customer/Supplier</strong></td>
+            <td>Bookings require an authenticated Traveller. Booking context depends on user identity and membership
+                status.</td>
+        </tr>
+        <tr>
+            <td>Listing Management</td>
+            <td>Booking</td>
+            <td><strong>Customer/Supplier</strong></td>
+            <td>Bookings reference a Listing for pricing, room types, and availability.</td>
+        </tr>
+        <tr>
+            <td>Booking</td>
+            <td>Payment & Wallet</td>
+            <td><strong>Customer/Supplier</strong></td>
+            <td>Payments are processed after booking creation. Payment context depends on booking amounts.</td>
+        </tr>
+        <tr>
+            <td>Booking ↔ Communication</td>
+            <td>—</td>
+            <td><strong>Shared Kernel</strong></td>
+            <td>Chat is created per booking. Both contexts share the Booking and User references.</td>
+        </tr>
+        <tr>
+            <td>Identity & Access</td>
+            <td>Communication</td>
+            <td><strong>Customer/Supplier</strong></td>
+            <td>Chats and contact messages reference User identities.</td>
+        </tr>
+        <tr>
+            <td>Identity & Access</td>
+            <td>Payment & Wallet</td>
+            <td><strong>Conformist</strong></td>
+            <td>Wallet balance and reward points are stored on the User model. Payment conforms to User model.</td>
+        </tr>
+        <tr>
+            <td>Listing Management</td>
+            <td>Transportation</td>
+            <td><strong>Customer/Supplier</strong></td>
+            <td>Taxi bookings originate from a hotel Listing (pickup location).</td>
+        </tr>
+        <tr>
+            <td>Identity & Access</td>
+            <td>Transportation</td>
+            <td><strong>Customer/Supplier</strong></td>
+            <td>Taxi bookings require authenticated users.</td>
+        </tr>
+        <tr>
+            <td>Booking</td>
+            <td>Transportation</td>
+            <td><strong>Customer/Supplier</strong></td>
+            <td>Taxi rides are associated with a hotel stay (booking).</td>
+        </tr>
+    </table>
+
+    <hr>
+    <div class="page-break"></div>
+
+    <!-- ==================== SECTION 2c ==================== -->
+    <h3>2c. Entities, Value Objects, and Services</h3>
+
+    <span class="section-label">CONTEXT 1</span>
+    <h4>Identity & Access Context</h4>
+    <table>
+        <tr>
+            <th>Type</th>
+            <th>Name</th>
+            <th>Key Attributes</th>
+        </tr>
+        <tr>
+            <td><strong>Entity</strong></td>
+            <td>User</td>
+            <td>_id, username, email, role, name, phone, address, isApproved, isMember, walletBalance, rewardPoints</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>Email</td>
+            <td>String (unique, required)</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>Role</td>
+            <td>Enum: traveller, manager, admin, staff</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>MembershipStatus</td>
+            <td>isMember (Boolean), membershipExpiresAt (Date)</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>ProfilePhoto</td>
+            <td>URL string</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>ManagerDocuments</td>
+            <td>Array of document URLs</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>CancellationQuota</td>
+            <td>freeCancellationsUsed (Number), freeCancellationsResetAt (Date)</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>AuthenticationService</td>
+            <td>signup(), login(), logout(), changePassword()</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>MembershipService</td>
+            <td>activateMembership(), checkMembershipExpiry()</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>ManagerApprovalService</td>
+            <td>approveManager(), rejectManager(), getPendingManagers()</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>ProfileService</td>
+            <td>updateProfile(), getCurrentUser()</td>
+        </tr>
+    </table>
+
+    <span class="section-label">CONTEXT 2</span>
+    <h4>Listing Management Context</h4>
+    <table>
+        <tr>
+            <th>Type</th>
+            <th>Name</th>
+            <th>Key Attributes</th>
+        </tr>
+        <tr>
+            <td><strong>Entity</strong></td>
+            <td>Listing</td>
+            <td>_id, title, description, price, location, country, owner, status, lastUpdated, hotelLicense, rooms</td>
+        </tr>
+        <tr>
+            <td><strong>Entity</strong></td>
+            <td>Review</td>
+            <td>_id, comment, rating, photos, author, createdAt</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>Location</td>
+            <td>location (String), country (String)</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>Price</td>
+            <td>Number (min: 0)</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>Images</td>
+            <td>Array of URL strings (max 20)</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>RoomTypes</td>
+            <td>single (Number), double (Number), triple (Number)</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>ListingStatus</td>
+            <td>Enum: pending, approved, rejected</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>Rating</td>
+            <td>Number (1–5)</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>HotelLicense</td>
+            <td>String (license document URL)</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>ListingCRUDService</td>
+            <td>create(), update(), delete(), getById(), getAll()</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>SearchService</td>
+            <td>searchByText(), filterByPrice(), filterByRating(), paginatedSearch()</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>ListingApprovalService</td>
+            <td>approveListing(), rejectListing(), getPendingListings()</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>InactivityService</td>
+            <td>checkInactivity(), warnOwner(), autoDeleteInactive()</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>ReviewService</td>
+            <td>createReview(), deleteReview(), sortReviews()</td>
+        </tr>
+    </table>
+
+    <span class="section-label">CONTEXT 3</span>
+    <h4>Booking Context</h4>
+    <table>
+        <tr>
+            <th>Type</th>
+            <th>Name</th>
+            <th>Key Attributes</th>
+        </tr>
+        <tr>
+            <td><strong>Entity</strong></td>
+            <td>Booking</td>
+            <td>_id, user, listing, checkIn, checkOut, guests, totalAmount, status, paymentStatus, paymentId</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>DateRange</td>
+            <td>checkIn (String), checkOut (String)</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>RoomAllocation</td>
+            <td>single (Number), double (Number), triple (Number)</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>GuestCount</td>
+            <td>Number (min: 1, max: 5)</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>BookingStatus</td>
+            <td>Enum: confirmed, cancelled</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>PaymentStatus</td>
+            <td>Enum: pending, paid, refunded</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>PlatformCommission</td>
+            <td>Number (5% of base amount, 0% for members)</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>CancellationInfo</td>
+            <td>cancelledBy (user/owner/admin), cancelledAt (Date), refundId (String)</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>BookingService</td>
+            <td>createBooking(), cancelBooking(), getBookingHistory()</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>RoomAllocationService</td>
+            <td>allocateRooms(), restoreRooms()</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>PricingService</td>
+            <td>calculateBaseAmount(), calculateServiceFee(), calculateTotal()</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>CancellationService</td>
+            <td>initiateCancellation(), confirmCancellation(), processRefund()</td>
+        </tr>
+    </table>
+
+    <div class="page-break"></div>
+
+    <span class="section-label">CONTEXT 4</span>
+    <h4>Payment & Wallet Context</h4>
+    <table>
+        <tr>
+            <th>Type</th>
+            <th>Name</th>
+            <th>Key Attributes</th>
+        </tr>
+        <tr>
+            <td><strong>Entity</strong></td>
+            <td>Transaction</td>
+            <td>_id, user, type, amount, description, createdAt</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>Money</td>
+            <td>Number (min: 0)</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>TransactionType</td>
+            <td>Enum: earn, redeem, spend</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>RazorpayOrderId</td>
+            <td>String</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>RazorpayPaymentId</td>
+            <td>String</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>RefundId</td>
+            <td>String</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>PaymentGatewayService</td>
+            <td>createOrder(), verifyPayment(), processRefund() — via Razorpay</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>WalletService</td>
+            <td>getBalance(), addFunds(), deductFunds()</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>RewardPointsService</td>
+            <td>earnPoints(), redeemPoints(), getPointsHistory()</td>
+        </tr>
+    </table>
+
+    <span class="section-label">CONTEXT 5</span>
+    <h4>Communication Context</h4>
+    <table>
+        <tr>
+            <th>Type</th>
+            <th>Name</th>
+            <th>Key Attributes</th>
+        </tr>
+        <tr>
+            <td><strong>Entity</strong></td>
+            <td>Chat</td>
+            <td>_id, booking, listing, traveler, manager, messages[], lastMessage, status</td>
+        </tr>
+        <tr>
+            <td><strong>Entity</strong></td>
+            <td>Message</td>
+            <td>_id, sender, senderRole, message, timestamp, isRead</td>
+        </tr>
+        <tr>
+            <td><strong>Entity</strong></td>
+            <td>ContactMessage</td>
+            <td>_id, name, email, subject, message, user</td>
+        </tr>
+        <tr>
+            <td><strong>Entity</strong></td>
+            <td>Request</td>
+            <td>_id, user, listing, booking, type, message, status</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>MessageContent</td>
+            <td>String (trimmed, required)</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>ChatStatus</td>
+            <td>Enum: open, resolved</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>RequestType</td>
+            <td>Enum: service, complaint</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>RequestStatus</td>
+            <td>Enum: open, in_progress, resolved</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>UnreadCounts</td>
+            <td>unreadByTraveler (Number), unreadByManager (Number)</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>ChatService</td>
+            <td>createChat(), sendMessage(), markAsRead(), getChatHistory()</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>ContactService</td>
+            <td>submitContactForm(), getContactMessages()</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>RequestService</td>
+            <td>createRequest(), updateRequestStatus(), getRequests()</td>
+        </tr>
+    </table>
+
+    <span class="section-label">CONTEXT 6</span>
+    <h4>Transportation Context</h4>
+    <table>
+        <tr>
+            <th>Type</th>
+            <th>Name</th>
+            <th>Key Attributes</th>
+        </tr>
+        <tr>
+            <td><strong>Entity</strong></td>
+            <td>TaxiBooking</td>
+            <td>_id, user, listing, pickupLocation, dropLocation, distanceKm, estimatedTimeMin, taxiType, fareAmount,
+                bookingStatus</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>Fare</td>
+            <td>fareAmount (Number), taxiType multiplier</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>Distance</td>
+            <td>distanceKm (Number, min: 0)</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>EstimatedTime</td>
+            <td>estimatedTimeMin (Number, min: 1)</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>TaxiType</td>
+            <td>Enum: Standard, SUV, Luxury</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>TaxiPaymentStatus</td>
+            <td>Enum: Pending, Paid, Failed</td>
+        </tr>
+        <tr>
+            <td>Value Object</td>
+            <td>TaxiBookingStatus</td>
+            <td>Enum: Created, Confirmed, Cancelled</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>TaxiBookingService</td>
+            <td>createTaxiBooking(), cancelTaxiBooking(), getUserTaxiBookings()</td>
+        </tr>
+        <tr>
+            <td><em>Service</em></td>
+            <td>FareCalculationService</td>
+            <td>calculateFare(), applyTaxiTypeMultiplier()</td>
+        </tr>
+    </table>
+
+    <hr>
+    <div class="page-break"></div>
+
+    <!-- ==================== SECTION 2d ==================== -->
+    <h3>2d. Cardinality Ratios</h3>
+
+    <div class="mermaid-container er-diagram">
+        <pre class="mermaid">
+erDiagram
+    USER ||--o{ LISTING : "owns 1:N"
+    USER ||--o{ BOOKING : "makes 1:N"
+    USER ||--o{ REVIEW : "writes 1:N"
+    USER ||--o{ TRANSACTION : "has 1:N"
+    USER ||--o{ TAXI_BOOKING : "books 1:N"
+    USER ||--o{ CONTACT_MESSAGE : "submits 1:N"
+    USER ||--o{ REQUEST : "creates 1:N"
+    LISTING ||--o{ BOOKING : "receives 1:N"
+    LISTING ||--o{ REVIEW : "has 1:N"
+    LISTING ||--o{ TAXI_BOOKING : "originates 1:N"
+    BOOKING ||--o| CHAT : "has 1:0..1"
+    CHAT ||--o{ MESSAGE : "contains 1:N"
+        </pre>
+    </div>
+
+    <h4>Cardinality Ratio Table</h4>
+    <table>
+        <tr>
+            <th>Entity A</th>
+            <th>Relationship</th>
+            <th>Entity B</th>
+            <th>Ratio</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>User</td>
+            <td>owns</td>
+            <td>Listing</td>
+            <td><strong>1 : N</strong></td>
+            <td>One manager can own multiple hotel listings</td>
+        </tr>
+        <tr>
+            <td>User</td>
+            <td>makes</td>
+            <td>Booking</td>
+            <td><strong>1 : N</strong></td>
+            <td>One traveller can make multiple bookings</td>
+        </tr>
+        <tr>
+            <td>User</td>
+            <td>writes</td>
+            <td>Review</td>
+            <td><strong>1 : N</strong></td>
+            <td>One user can write multiple reviews</td>
+        </tr>
+        <tr>
+            <td>User</td>
+            <td>has</td>
+            <td>Transaction</td>
+            <td><strong>1 : N</strong></td>
+            <td>One user can have multiple wallet transactions</td>
+        </tr>
+        <tr>
+            <td>User</td>
+            <td>books</td>
+            <td>TaxiBooking</td>
+            <td><strong>1 : N</strong></td>
+            <td>One user can book multiple taxi rides</td>
+        </tr>
+        <tr>
+            <td>User</td>
+            <td>submits</td>
+            <td>ContactMessage</td>
+            <td><strong>1 : N</strong></td>
+            <td>One user can submit multiple contact messages</td>
+        </tr>
+        <tr>
+            <td>User</td>
+            <td>creates</td>
+            <td>Request</td>
+            <td><strong>1 : N</strong></td>
+            <td>One user can create multiple service requests</td>
+        </tr>
+        <tr>
+            <td>User</td>
+            <td>approved_by</td>
+            <td>User (Admin)</td>
+            <td><strong>N : 1</strong></td>
+            <td>Multiple managers approved by one admin</td>
+        </tr>
+        <tr>
+            <td>Listing</td>
+            <td>receives</td>
+            <td>Booking</td>
+            <td><strong>1 : N</strong></td>
+            <td>One listing can have multiple bookings</td>
+        </tr>
+        <tr>
+            <td>Listing</td>
+            <td>has</td>
+            <td>Review</td>
+            <td><strong>1 : N</strong></td>
+            <td>One listing can have multiple reviews</td>
+        </tr>
+        <tr>
+            <td>Listing</td>
+            <td>originates</td>
+            <td>TaxiBooking</td>
+            <td><strong>1 : N</strong></td>
+            <td>Multiple taxi bookings from one hotel</td>
+        </tr>
+        <tr>
+            <td>Booking</td>
+            <td>has</td>
+            <td>Chat</td>
+            <td><strong>1 : 0..1</strong></td>
+            <td>One booking has at most one chat thread</td>
+        </tr>
+        <tr>
+            <td>Booking</td>
+            <td>linked</td>
+            <td>Request</td>
+            <td><strong>1 : 0..1</strong></td>
+            <td>One booking can have zero or one service request</td>
+        </tr>
+        <tr>
+            <td>Chat</td>
+            <td>contains</td>
+            <td>Message</td>
+            <td><strong>1 : N</strong></td>
+            <td>One chat thread contains multiple messages</td>
+        </tr>
+        <tr>
+            <td>Review</td>
+            <td>authored_by</td>
+            <td>User</td>
+            <td><strong>N : 1</strong></td>
+            <td>Multiple reviews written by same author</td>
+        </tr>
+        <tr>
+            <td>Listing</td>
+            <td>owned_by</td>
+            <td>User</td>
+            <td><strong>N : 1</strong></td>
+            <td>Multiple listings owned by same manager</td>
+        </tr>
+    </table>
+
+    <hr>
+    <div class="page-break"></div>
+
+    <!-- ==================== SECTION 2e ==================== -->
+    <h3>2e. Aggregates</h3>
+    <p>Aggregates define transactional consistency boundaries. Each aggregate has a <strong>root entity</strong> that
+        controls access to all internal objects. Cross-aggregate references use IDs only.</p>
+
+    <div class="mermaid-container aggregate-diagram">
+        <pre class="mermaid">
+graph TB
+    subgraph AG1["User Aggregate"]
+        U[" User ★ Root"]
+        U --> R["Role VO"]
+        U --> MS["MembershipStatus VO"]
+        U --> PP["ProfilePhoto VO"]
+        U --> CQ["CancellationQuota VO"]
+        U --> WB["WalletBalance VO"]
+        U --> RP["RewardPoints VO"]
+    end
+
+    subgraph AG2["Listing Aggregate"]
+        L[" Listing ★ Root"]
+        L --> RV["Review Entity"]
+        L --> RT["RoomTypes VO"]
+        L --> IMG["Images VO"]
+        L --> LOC["Location VO"]
+        L --> LS["ListingStatus VO"]
+    end
+
+    subgraph AG3["Booking Aggregate"]
+        B[" Booking ★ Root"]
+        B --> DR["DateRange VO"]
+        B --> RA["RoomAllocation VO"]
+        B --> GC["GuestCount VO"]
+        B --> BS["BookingStatus VO"]
+        B --> PS["PaymentStatus VO"]
+        B --> CI["CancellationInfo VO"]
+    end
+
+    subgraph AG4["Chat Aggregate"]
+        C[" Chat ★ Root"]
+        C --> M["Message Entity"]
+        C --> CS["ChatStatus VO"]
+        C --> UC["UnreadCounts VO"]
+    end
+
+    style U fill:#e8e8e8,color:#2d3436,stroke:#999
+    style L fill:#e8e8e8,color:#2d3436,stroke:#999
+    style B fill:#e8e8e8,color:#2d3436,stroke:#999
+    style C fill:#e8e8e8,color:#2d3436,stroke:#999
+        </pre>
+    </div>
+
+    <div class="mermaid-container aggregate-diagram">
+        <pre class="mermaid">
+graph TB
+    subgraph AG5["Transaction Aggregate"]
+        T[" Transaction ★ Root"]
+        T --> TT["TransactionType VO"]
+        T --> MO["Money VO"]
+    end
+
+    subgraph AG6["TaxiBooking Aggregate"]
+        TB[" TaxiBooking ★ Root"]
+        TB --> F["Fare VO"]
+        TB --> D["Distance VO"]
+        TB --> TBT["TaxiType VO"]
+        TB --> TBS["BookingStatus VO"]
+    end
+
+    subgraph AG7["ContactMessage Aggregate"]
+        CM[" ContactMessage ★ Root"]
+    end
+
+    subgraph AG8["Request Aggregate"]
+        RQ[" Request ★ Root"]
+        RQ --> RQT["RequestType VO"]
+        RQ --> RQS["RequestStatus VO"]
+    end
+
+    style T fill:#e8e8e8,color:#2d3436,stroke:#999
+    style TB fill:#e8e8e8,color:#2d3436,stroke:#999
+    style CM fill:#e8e8e8,color:#2d3436,stroke:#999
+    style RQ fill:#e8e8e8,color:#2d3436,stroke:#999
+        </pre>
+    </div>
+
+    <h4>Aggregate Summary Table</h4>
+    <table>
+        <tr>
+            <th>#</th>
+            <th>Aggregate</th>
+            <th>Root Entity</th>
+            <th>Internal Entities</th>
+            <th>Value Objects</th>
+            <th>Key Invariants</th>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td><strong>User</strong></td>
+            <td>User</td>
+            <td>—</td>
+            <td>Role, MembershipStatus, ProfilePhoto, CancellationQuota, WalletBalance, RewardPoints</td>
+            <td>Email unique; wallet ≥ 0; points ≥ 0; role ∈ valid enum</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td><strong>Listing</strong></td>
+            <td>Listing</td>
+            <td>Review</td>
+            <td>RoomTypes, Images, Location, ListingStatus, HotelLicense</td>
+            <td>Max 20 images; rooms ≥ 1; price ≥ 0; auto-delete after 2mo inactivity</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td><strong>Booking</strong></td>
+            <td>Booking</td>
+            <td>—</td>
+            <td>DateRange, RoomAllocation, GuestCount, BookingStatus, PaymentStatus, PlatformCommission,
+                CancellationInfo</td>
+            <td>Guests 1–5; checkOut > checkIn; commission = 5% (0% for members)</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td><strong>Chat</strong></td>
+            <td>Chat</td>
+            <td>Message</td>
+            <td>ChatStatus, UnreadCounts</td>
+            <td>One chat per booking (unique); messages ordered by timestamp</td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td><strong>Transaction</strong></td>
+            <td>Transaction</td>
+            <td>—</td>
+            <td>TransactionType, Money</td>
+            <td>Amount ≥ 0; type ∈ {earn, redeem, spend}</td>
+        </tr>
+        <tr>
+            <td>6</td>
+            <td><strong>TaxiBooking</strong></td>
+            <td>TaxiBooking</td>
+            <td>—</td>
+            <td>Fare, Distance, TaxiType, BookingStatus</td>
+            <td>Distance ≥ 0; estimatedTime ≥ 1; fare follows type multiplier</td>
+        </tr>
+        <tr>
+            <td>7</td>
+            <td><strong>ContactMessage</strong></td>
+            <td>ContactMessage</td>
+            <td>—</td>
+            <td>—</td>
+            <td>Message max 5000 chars; name and email required</td>
+        </tr>
+        <tr>
+            <td>8</td>
+            <td><strong>Request</strong></td>
+            <td>Request</td>
+            <td>—</td>
+            <td>RequestType, RequestStatus</td>
+            <td>Type ∈ {service, complaint}; status lifecycle: open → in_progress → resolved</td>
+        </tr>
+    </table>
+
+    <h4>Aggregate Design Rules</h4>
+    <table>
+        <tr>
+            <th>Rule</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td><strong>1. Root-only access</strong></td>
+            <td>All access to internal objects goes through the Aggregate Root. Reviews are accessed through Listing;
+                Messages through Chat.</td>
+        </tr>
+        <tr>
+            <td><strong>2. ID-only references</strong></td>
+            <td>Cross-aggregate references use IDs only. Booking stores User._id and Listing._id, not full objects.</td>
+        </tr>
+        <tr>
+            <td><strong>3. Transactional boundary</strong></td>
+            <td>Each aggregate is an atomic transactional unit. Creating a Booking + allocating rooms is one
+                transaction.</td>
+        </tr>
+        <tr>
+            <td><strong>4. Immutable VOs</strong></td>
+            <td>Value Objects (Role, DateRange, Money, etc.) are replaced entirely, never mutated in place.</td>
+        </tr>
+    </table>
+
+    <hr>
+
+    <h3>Technology Stack</h3>
+    <table>
+        <tr>
+            <th>Layer</th>
+            <th>Technology</th>
+        </tr>
+        <tr>
+            <td>Frontend</td>
+            <td>React.js (Vite)</td>
+        </tr>
+        <tr>
+            <td>Backend</td>
+            <td>Node.js + Express.js</td>
+        </tr>
+        <tr>
+            <td>Database</td>
+            <td>MongoDB Atlas</td>
+        </tr>
+        <tr>
+            <td>Caching</td>
+            <td>Redis (ioredis)</td>
+        </tr>
+        <tr>
+            <td>Payments</td>
+            <td>Razorpay</td>
+        </tr>
+        <tr>
+            <td>Image Storage</td>
+            <td>Cloudinary</td>
+        </tr>
+        <tr>
+            <td>Authentication</td>
+            <td>Passport.js (Local Strategy)</td>
+        </tr>
+        <tr>
+            <td>API Documentation</td>
+            <td>Swagger UI</td>
+        </tr>
+        <tr>
+            <td>Testing</td>
+            <td>Jest + Supertest (39 tests)</td>
+        </tr>
+        <tr>
+            <td>Containerization</td>
+            <td>Docker</td>
+        </tr>
+        <tr>
+            <td>CI/CD</td>
+            <td>GitHub Actions</td>
+        </tr>
+    </table>
+
+    <hr>
+    <p style="text-align: center; color: #777; font-size: 12px; margin-top: 30px;">
+        <em>Document prepared for DDD submission — TravelNest Project</em>
+    </p>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true,
+                padding: 20,
+                nodeSpacing: 60,
+                rankSpacing: 60,
+                curve: 'basis'
+            },
+            er: {
+                useMaxWidth: false,
+                fontSize: 16,
+                entityPadding: 20,
+                minEntityWidth: 120,
+                minEntityHeight: 60
+            },
+            themeVariables: {
+                fontSize: '16px',
+                fontFamily: 'Inter, sans-serif'
+            }
+        });
+    </script>
+</body>
+
+</html>

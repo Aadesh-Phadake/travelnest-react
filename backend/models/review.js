@@ -23,4 +23,8 @@ const ReviewSchema = new schema({
     }
 });
 
-module.exports = mongoose.model('Review', ReviewSchema);    
+// ===== DATABASE INDEXES =====
+ReviewSchema.index({ author: 1 });           // User review lookups
+ReviewSchema.index({ createdAt: -1 });       // Sorted reviews
+
+module.exports = mongoose.model('Review', ReviewSchema);
