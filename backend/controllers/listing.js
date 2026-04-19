@@ -126,13 +126,13 @@ module.exports.index = async (req, res) => {
             }
         };
 
-        // Cache the response
-        await setCache(cacheKey, response, 60);
+        // Cache the listings array (must match what we return to frontend)
+        await setCache(cacheKey, listings, 60);
 
         console.timeEnd('⏱️ GET /listings');
 
         // Return just the listings array for backwards compatibility
-        // (frontend may expect an array directly)
+        // (frontend expects an array directly)
         res.status(200).json(listings);
     } catch (e) {
         console.timeEnd('⏱️ GET /listings');
