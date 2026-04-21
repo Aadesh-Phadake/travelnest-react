@@ -5,6 +5,7 @@ const Listing = require('../models/listing');
 const Booking = require('../models/booking');
 const ContactMessage = require('../models/contactMessage');
 const { isLoggedIn } = require('../middleware');
+const { getCache, setCache, invalidateCache, buildCacheKey } = require('../services/cacheService');
 
 // Helper function to get week number that matches MongoDB $week operator
 function getMongoWeek(date) {
@@ -46,15 +47,26 @@ function requireStaff(req, res, next) {
  */
 router.get('/users', isLoggedIn, requireAdmin, async (req, res) => {
     try {
+        console.time('⏱️ GET /api/admin/users');
+
+        // Cache-first strategy
+        const cacheKey = 'admin:users';
+        const cached = await getCache(cacheKey);
+        if (cached) {
+            console.timeEnd('⏱️ GET /api/admin/users');
+            return res.status(200).json(cached);
+        }
+
         const users = await User.find({
             username: { $ne: "TravelNest" },
             role: 'traveller'
         })
-            .sort('-createdAt');
+            .sort('-createdAt')
+            .lean(); // Performance: plain JS objects
 
         // Add booking statistics for each user
         const usersWithStats = await Promise.all(users.map(async (user) => {
-            const bookings = await Booking.find({ user: user._id });
+            const bookings = await Booking.find({ user: user._id }).lean();
             const totalBookings = bookings.length;
             const totalSpent = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
             const lastBooking = bookings.length > 0 ?
@@ -83,7 +95,13 @@ router.get('/users', isLoggedIn, requireAdmin, async (req, res) => {
             return (a.username || '').localeCompare(b.username || '');
         });
 
-        res.status(200).json({ success: true, users: usersWithStats });
+        const response = { success: true, users: usersWithStats };
+
+        // Cache for 60 seconds
+        await setCache(cacheKey, response, 60);
+
+        console.timeEnd('⏱️ GET /api/admin/users');
+        res.status(200).json(response);
     } catch (error) {
         console.error('Error fetching users:', error);
         res.status(500).json({ error: 'Failed to fetch users' });
@@ -717,6 +735,10 @@ router.delete('/users/:id', isLoggedIn, requireStaff, async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
+        // Invalidate admin caches since data changed
+        await invalidateCache('admin:*');
+        await invalidateCache('listings:*');
+
         res.status(200).json({ success: true, message: 'User and their bookings deleted successfully' });
     } catch (error) {
         console.error('Error deleting user:', error);
@@ -753,6 +775,10 @@ router.delete('/hotels/:id', isLoggedIn, requireStaff, async (req, res) => {
         if (!deletedHotel) {
             return res.status(404).json({ error: 'Hotel not found' });
         }
+
+        // Invalidate caches since data changed
+        await invalidateCache('admin:*');
+        await invalidateCache('listings:*');
 
         res.status(200).json({ success: true, message: 'Hotel deleted successfully' });
     } catch (error) {
@@ -807,6 +833,9 @@ router.patch('/users/:id/membership', isLoggedIn, requireStaff, async (req, res)
         if (!updatedUser) {
             return res.status(404).json({ error: 'User not found' });
         }
+
+        // Invalidate admin caches
+        await invalidateCache('admin:*');
 
         res.status(200).json({ success: true, message: 'User membership updated successfully' });
     } catch (error) {

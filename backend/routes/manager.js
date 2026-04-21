@@ -51,18 +51,18 @@ router.get('/api/hotels', isLoggedIn, requireManager, wrapAsync(async (req, res)
     try {
         const hotels = await Listing.find({ owner: req.user._id })
             .sort('-createdAt');
-        
+
         // Add booking statistics for each hotel
         const hotelsWithStats = await Promise.all(hotels.map(async (hotel) => {
             const bookings = await Booking.find({ listing: hotel._id });
             const totalBookings = bookings.length;
             const totalRevenue = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
             const recentBookings = bookings.slice(0, 5); // Last 5 bookings
-            
+
             // Calculate total rooms from roomTypes if rooms field is not set
-            const calculatedRooms = hotel.rooms || 
+            const calculatedRooms = hotel.rooms ||
                 ((hotel.roomTypes?.single || 0) + (hotel.roomTypes?.double || 0) + (hotel.roomTypes?.triple || 0));
-            
+
             return {
                 _id: hotel._id,
                 title: hotel.title,
@@ -80,7 +80,7 @@ router.get('/api/hotels', isLoggedIn, requireManager, wrapAsync(async (req, res)
                 recentBookings
             };
         }));
-        
+
         res.json({ success: true, hotels: hotelsWithStats });
     } catch (error) {
         console.error('Error fetching manager hotels:', error);
@@ -104,12 +104,12 @@ router.get('/api/bookings', isLoggedIn, requireManager, wrapAsync(async (req, re
     try {
         const managerHotels = await Listing.find({ owner: req.user._id }, '_id');
         const hotelIds = managerHotels.map(hotel => hotel._id);
-        
+
         const bookings = await Booking.find({ listing: { $in: hotelIds } })
             .populate('user', 'username email')
             .populate('listing', 'title location images')
             .sort('-createdAt');
-        
+
         res.json({ success: true, bookings });
     } catch (error) {
         console.error('Error fetching manager bookings:', error);
@@ -133,13 +133,13 @@ router.get('/api/taxi-bookings', isLoggedIn, requireManager, wrapAsync(async (re
     try {
         const managerHotels = await Listing.find({ owner: req.user._id }, '_id');
         const hotelIds = managerHotels.map(hotel => hotel._id);
-        
+
         const TaxiBooking = require('../models/taxiBooking');
         const taxiBookings = await TaxiBooking.find({ listing: { $in: hotelIds } })
             .populate('user', 'username email')
             .populate('listing', 'title location images')
             .sort('-createdAt');
-        
+
         res.json({ success: true, taxiBookings });
     } catch (error) {
         console.error('Error fetching manager taxi bookings:', error);
@@ -163,19 +163,19 @@ router.get('/api/stats', isLoggedIn, requireManager, wrapAsync(async (req, res) 
     try {
         const managerHotels = await Listing.find({ owner: req.user._id }, '_id');
         const hotelIds = managerHotels.map(hotel => hotel._id);
-        
+
         const totalHotels = managerHotels.length;
-        
+
         const bookings = await Booking.find({ listing: { $in: hotelIds } });
         const totalBookings = bookings.length;
         const totalRevenue = bookings.reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
         const avgBookingValue = totalBookings > 0 ? (totalRevenue / totalBookings) : 0;
-        
+
         // Recent bookings (last 30 days)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const recentBookings = bookings.filter(booking => new Date(booking.createdAt) > thirtyDaysAgo);
-        
+
         res.json({
             success: true,
             stats: {
@@ -210,7 +210,7 @@ router.get('/api/messages', isLoggedIn, requireManager, wrapAsync(async (req, re
             .populate('booking', 'checkIn checkOut totalAmount')
             .populate('user', 'username email')
             .sort('-createdAt');
-        
+
         res.json({ success: true, messages });
     } catch (error) {
         console.error('Error fetching manager messages:', error);
@@ -244,29 +244,29 @@ router.get('/api/messages', isLoggedIn, requireManager, wrapAsync(async (req, re
 router.post('/api/bookings/:id/cancel', isLoggedIn, requireManager, wrapAsync(async (req, res) => {
     try {
         const bookingId = req.params.id;
-        
+
         // Verify the booking belongs to one of manager's hotels
         const booking = await Booking.findById(bookingId).populate('listing');
         if (!booking) {
             return res.status(404).json({ success: false, error: 'Booking not found' });
         }
-        
+
         // Check if this booking is for one of the manager's hotels
         const managerHotels = await Listing.find({ owner: req.user._id }, '_id');
         const hotelIds = managerHotels.map(h => h._id.toString());
-        
+
         const bookingListingId = booking.listing?._id?.toString() || booking.listing?.toString();
         if (!hotelIds.includes(bookingListingId)) {
             return res.status(403).json({ success: false, error: 'You can only cancel bookings for your own hotels' });
         }
-        
+
         // Process the refund
         const { processRefund } = require('../controllers/paymentController');
         const result = await processRefund(bookingId, 'owner');
-        
+
         if (result.success) {
-            res.json({ 
-                success: true, 
+            res.json({
+                success: true,
                 message: 'Booking cancelled and refund initiated',
                 booking: result.booking,
                 refundId: result.refundId

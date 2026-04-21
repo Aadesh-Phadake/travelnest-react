@@ -13,6 +13,7 @@ const path = require('path');
 const errorLogger = require('./utils/logger');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
+const { initRedis } = require('./services/redisClient'); // Redis integration
 
 // Models
 const User = require('./models/user');
@@ -40,12 +41,37 @@ const accessLogStream = fs.createWriteStream(path.join(__dirname, 'logs.txt'), {
 // 1. Allow requests from your React App (Assuming it runs on port 5173 or 3000)
 app.use(morgan('combined', { stream: accessLogStream }));
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'], // Support multiple ports
+    origin: function (origin, callback) {
+        const allowedOrigins = [
+            'http://localhost:5173',
+            'http://localhost:5174',
+            'http://localhost:3000',
+        ];
+        // Allow requests with no origin (mobile apps, Postman, etc.)
+        if (!origin) return callback(null, true);
+        // Allow any Vercel deployment URL for this project
+        if (origin.endsWith('.vercel.app') || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true // Essential for maintaining sessions/cookies with React
 }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Request timing middleware — logs response time for every request
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        if (duration > 500) {
+            console.warn(`⚠️  Slow request: ${req.method} ${req.originalUrl} took ${duration}ms`);
+        }
+    });
+    next();
+});
 
 // MongoDB connection
 async function main() {
@@ -58,12 +84,22 @@ async function main() {
 }
 main();
 
+// Redis connection (graceful — app works without Redis)
+initRedis();
+
 // Session store
 const store = MongoStore.create({
     mongoUrl: MONGO_URL,
     crypto: { secret: process.env.SECRET || 'defaultsecret' },
     touchAfter: 24 * 3600
 });
+
+// Trust proxy in production (Render uses reverse proxy)
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+}
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 const sessionOptions = {
     store,
@@ -72,7 +108,8 @@ const sessionOptions = {
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        // secure: true, // Uncomment this when deploying with HTTPS
+        secure: isProduction,                          // HTTPS only in production
+        sameSite: isProduction ? 'none' : 'lax',       // Cross-site cookies in production
         expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
         maxAge: 1000 * 60 * 60 * 24 * 7
     }

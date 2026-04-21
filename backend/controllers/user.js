@@ -66,15 +66,19 @@ module.exports.logout = (req, res, next) => {
 module.exports.renderProfile = async (req, res) => {
     // Even though the name is "renderProfile", we now return JSON data
     try {
+        console.time('⏱️ GET /profile');
         const bookings = await Booking.find({ user: req.user._id })
             .populate('listing')
-            .sort('-createdAt');
+            .sort('-createdAt')
+            .lean(); // Performance: return plain JS objects
 
+        console.timeEnd('⏱️ GET /profile');
         res.status(200).json({
             user: req.user,
             bookings
         });
     } catch (e) {
+        console.timeEnd('⏱️ GET /profile');
         res.status(500).json({ message: "Error fetching profile" });
     }
 };
@@ -285,17 +289,22 @@ module.exports.deleteBooking = async (req, res) => {
 
         // Restore rooms if room allocation exists
         if (booking.roomAllocation && booking.listing) {
-            const listing = await Listing.findById(booking.listing);
-            if (listing && listing.roomTypes) {
-                listing.roomTypes.single = (listing.roomTypes.single || 0) + (booking.roomAllocation.single || 0);
-                listing.roomTypes.double = (listing.roomTypes.double || 0) + (booking.roomAllocation.double || 0);
-                listing.roomTypes.triple = (listing.roomTypes.triple || 0) + (booking.roomAllocation.triple || 0);
+            try {
+                const listing = await Listing.findById(booking.listing);
+                if (listing && listing.roomTypes) {
+                    listing.roomTypes.single = (listing.roomTypes.single || 0) + (booking.roomAllocation.single || 0);
+                    listing.roomTypes.double = (listing.roomTypes.double || 0) + (booking.roomAllocation.double || 0);
+                    listing.roomTypes.triple = (listing.roomTypes.triple || 0) + (booking.roomAllocation.triple || 0);
 
-                // Update total rooms
-                listing.rooms = (listing.roomTypes.single || 0) + (listing.roomTypes.double || 0) + (listing.roomTypes.triple || 0);
+                    // Update total rooms
+                    listing.rooms = (listing.roomTypes.single || 0) + (listing.roomTypes.double || 0) + (listing.roomTypes.triple || 0);
 
-                await listing.save();
-                console.log(`✅ Rooms restored for booking ${booking._id}`);
+                    await listing.save();
+                    console.log(`✅ Rooms restored for booking ${booking._id}`);
+                }
+            } catch (roomErr) {
+                // If listing doesn't exist, that's okay — just proceed with deletion
+                console.warn(`⚠️  Could not restore rooms for booking ${booking._id}: ${roomErr.message}`);
             }
         }
 
@@ -306,11 +315,167 @@ module.exports.deleteBooking = async (req, res) => {
     }
 };
 
-// Example for ownerDashboard:
-module.exports.ownerDashboard = async (req, res) => {
-    // ... fetch your data ...
-    // instead of res.render('dashboard', { data })
-    // do: res.status(200).json({ data });
+// ===============================
+// CURRENT USER
+// ===============================
+
+// ✅ Get current authenticated user
+module.exports.getCurrentUser = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).lean();
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.status(200).json({ user });
+    } catch (e) {
+        res.status(500).json({ message: 'Error fetching user data' });
+    }
 };
 
-// Keep your exports for the functions you define!
+// ===============================
+// CANCELLATION
+// ===============================
+
+module.exports.confirmCancellation = async (req, res) => {
+    try {
+        const booking = await Booking.findById(req.params.id);
+        if (!booking || !booking.user.equals(req.user._id)) {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+        booking.status = 'cancelled';
+        booking.cancelledBy = 'user';
+        booking.cancelledAt = new Date();
+        await booking.save();
+        res.status(200).json({ message: 'Booking cancelled successfully', booking });
+    } catch (e) {
+        res.status(500).json({ message: e.message });
+    }
+};
+
+module.exports.confirmCancellationAjax = async (req, res) => {
+    try {
+        const booking = await Booking.findById(req.params.id);
+        if (!booking || !booking.user.equals(req.user._id)) {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+        booking.status = 'cancelled';
+        booking.cancelledBy = 'user';
+        booking.cancelledAt = new Date();
+        await booking.save();
+        res.status(200).json({ success: true, message: 'Booking cancelled successfully' });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+};
+
+module.exports.getCancellationDetails = async (req, res) => {
+    try {
+        const booking = await Booking.findById(req.params.id)
+            .populate('listing', 'title location price')
+            .lean();
+        if (!booking) {
+            return res.status(404).json({ message: 'Booking not found' });
+        }
+        res.status(200).json({ booking });
+    } catch (e) {
+        res.status(500).json({ message: e.message });
+    }
+};
+
+// ===============================
+// MEMBERSHIP (AJAX)
+// ===============================
+
+module.exports.activateMembershipAjax = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        const now = new Date();
+        const expires = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        user.isMember = true;
+        user.membershipExpiresAt = expires;
+        await user.save();
+        res.status(200).json({ success: true, message: 'Membership activated!', user });
+    } catch (e) {
+        res.status(500).json({ success: false, message: 'Could not activate membership' });
+    }
+};
+
+// ===============================
+// DASHBOARD
+// ===============================
+
+module.exports.ownerDashboard = async (req, res) => {
+    try {
+        console.time('⏱️ GET /dashboard');
+        const listings = await Listing.find({ owner: req.user._id }).lean();
+        const bookings = await Booking.find({ user: req.user._id })
+            .populate('listing', 'title location')
+            .sort('-createdAt')
+            .lean();
+
+        console.timeEnd('⏱️ GET /dashboard');
+        res.status(200).json({
+            user: req.user,
+            listings,
+            bookings
+        });
+    } catch (e) {
+        console.timeEnd('⏱️ GET /dashboard');
+        res.status(500).json({ message: 'Error loading dashboard' });
+    }
+};
+
+module.exports.searchDashboard = async (req, res) => {
+    try {
+        const { q } = req.query;
+        let filter = { owner: req.user._id };
+
+        if (q) {
+            filter.$or = [
+                { title: { $regex: q, $options: 'i' } },
+                { location: { $regex: q, $options: 'i' } }
+            ];
+        }
+
+        const listings = await Listing.find(filter).lean();
+        res.status(200).json({ listings });
+    } catch (e) {
+        res.status(500).json({ message: 'Error searching dashboard' });
+    }
+};
+
+module.exports.getUserHotels = async (req, res) => {
+    try {
+        const listings = await Listing.find({ owner: req.user._id })
+            .sort('-createdAt')
+            .lean();
+        res.status(200).json({ hotels: listings });
+    } catch (e) {
+        res.status(500).json({ message: 'Error fetching hotels' });
+    }
+};
+
+module.exports.adminDashboard = async (req, res) => {
+    try {
+        if (req.user.role !== 'admin' && req.user.role !== 'staff') {
+            return res.status(403).json({ message: 'Admin access required' });
+        }
+
+        const totalUsers = await User.countDocuments({ role: 'traveller' });
+        const totalManagers = await User.countDocuments({ role: 'manager' });
+        const totalListings = await Listing.countDocuments();
+        const totalBookings = await Booking.countDocuments();
+
+        res.status(200).json({
+            totalUsers,
+            totalManagers,
+            totalListings,
+            totalBookings
+        });
+    } catch (e) {
+        res.status(500).json({ message: 'Error loading admin dashboard' });
+    }
+};

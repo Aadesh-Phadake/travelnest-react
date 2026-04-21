@@ -100,5 +100,12 @@ const bookingSchema = new Schema({
     }
 });
 
+// ===== DATABASE INDEXES =====
+bookingSchema.index({ user: 1, createdAt: -1 });    // User's bookings sorted by date
+bookingSchema.index({ user: 1, listing: 1 });       // Check if user booked a listing
+bookingSchema.index({ listing: 1 });                // Hotel booking stats
+bookingSchema.index({ listing: 1, createdAt: -1 }); // Hotel booking history sorted
+bookingSchema.index({ status: 1 });                 // Filter by booking status
+
 const Booking = mongoose.model('Booking', bookingSchema);
-module.exports = Booking; 
+module.exports = Booking;
