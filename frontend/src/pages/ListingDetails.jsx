@@ -4,7 +4,9 @@ import toast from 'react-hot-toast';
 import { useSelector } from 'react-redux';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
+import toastConfirm from '../utils/toastConfirm';
 import WeatherWidget from '../components/WeatherWidget';
+import { ListingDetailSkeleton } from '../components/skeletons';
 
 const ListingDetails = () => {
     const { id } = useParams();
@@ -95,7 +97,8 @@ const ListingDetails = () => {
     };
 
     const handleDeleteReview = async (reviewId) => {
-        if(!window.confirm("Delete this review?")) return;
+        const confirmed = await toastConfirm('Are you sure you want to delete this review?');
+        if (!confirmed) return;
         try {
             await api.delete(`/listings/${id}/reviews/${reviewId}`);
             setListing(prev => ({
@@ -109,7 +112,8 @@ const ListingDetails = () => {
     };
 
     const handleDeleteListing = async () => {
-        if(!window.confirm("Are you sure? This cannot be undone.")) return;
+        const confirmed = await toastConfirm('Are you sure? This action cannot be undone.');
+        if (!confirmed) return;
         try {
             await api.delete(`/listings/${id}`);
             toast.success("Listing deleted");
@@ -135,7 +139,7 @@ const ListingDetails = () => {
         setSelectedImage('');
     };
 
-    if (loading) return <div className="flex justify-center items-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
+    if (loading) return <ListingDetailSkeleton />;
     if (!listing) return <div className="text-center mt-10">Listing not found</div>;
 
     const isOwner = user && listing.owner && (user._id === listing.owner._id || user._id === listing.owner);

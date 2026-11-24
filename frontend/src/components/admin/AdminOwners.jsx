@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useAdminOwners } from '../../hooks/admin/useAdminOwners';
 import api from '../../api/axios';
+import toastConfirm from '../../utils/toastConfirm';
 
 const AdminOwners = ({ userRole }) => {
   const { owners, removeOwner } = useAdminOwners();
@@ -11,8 +12,9 @@ const AdminOwners = ({ userRole }) => {
   const [bookingHistoryByOwner, setBookingHistoryByOwner] = useState({});
   const [historyErrorByOwner, setHistoryErrorByOwner] = useState({});
 
-  const handleDeleteOwner = (id) => {
-    if (window.confirm('Delete this owner and all their hotels/bookings?')) {
+  const handleDeleteOwner = async (id) => {
+    const confirmed = await toastConfirm('Delete this owner and all their hotels/bookings?');
+    if (confirmed) {
       removeOwner(id);
     }
   };

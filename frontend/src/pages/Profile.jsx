@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
+import toastConfirm from '../utils/toastConfirm';
+import { ProfileSkeleton } from '../components/skeletons';
 
 const Profile = () => {
     const [profileData, setProfileData] = useState(null);
@@ -73,7 +75,8 @@ const Profile = () => {
     }, [location.state, profileData]);
 
     const handleCancelBooking = async (id) => {
-        if(!window.confirm("Are you sure you want to cancel this booking?")) return;
+        const confirmed = await toastConfirm('Are you sure you want to cancel this booking?');
+        if (!confirmed) return;
         try {
             await api.delete(`/profile/cancel/${id}`);
             setProfileData(prev => ({
@@ -135,7 +138,8 @@ const Profile = () => {
         }
     };
     const handleRedeemPoints = async (points, discountAmount) => {
-        if (!window.confirm(`Are you sure you want to redeem ${points} points for ₹${discountAmount} discount?`)) return;
+        const confirmed = await toastConfirm(`Redeem ${points} points for ₹${discountAmount} discount?`);
+        if (!confirmed) return;
 
         try {
             const response = await api.post('/wallet/redeem', { points });
@@ -156,11 +160,7 @@ const Profile = () => {
         }
     };
 
-    if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
-    );
+    if (loading) return <ProfileSkeleton />;
 
     if (!profileData) return <div className="text-center mt-10">User not found</div>;
 

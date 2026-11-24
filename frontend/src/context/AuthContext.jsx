@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../api/axios';
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
 
@@ -38,6 +39,7 @@ export const AuthProvider = ({ children }) => {
             localStorage.removeItem('user');
         } catch (error) {
             console.error("Logout failed", error);
+            toast.error('Logout failed. Please try again.');
         }
     };
 

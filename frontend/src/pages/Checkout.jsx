@@ -4,6 +4,7 @@ import api from '../api/axios';
 // import { useAuth } from '../context/AuthContext';
 import { Calendar, IndianRupee, Loader, MapPin, ShieldCheck, Users, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { CheckoutSkeleton } from '../components/skeletons';
 import { useSelector } from 'react-redux';
 
 const Checkout = () => {
@@ -265,14 +266,7 @@ const Checkout = () => {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-                <Loader className="w-10 h-10 text-primary animate-spin mb-4" />
-                <p className="text-gray-500">Calculating best price...</p>
-            </div>
-        );
-    }
+    if (loading) return <CheckoutSkeleton />;
 
     // Safety check: If loading finished but data is missing
     if (!orderDetails || !orderDetails.property) {

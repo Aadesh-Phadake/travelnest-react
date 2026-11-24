@@ -4,6 +4,7 @@ import api from '../api/axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchManagerHotels, fetchManagerBookings, fetchManagerChats, fetchUnreadCount, appendManagerMessage } from '../redux/dashboardSlice';
 import toast from 'react-hot-toast';
+import { OwnerDashboardSkeleton } from '../components/skeletons';
 import { Link, useNavigate } from 'react-router-dom';
 // redux moved above
 import { 
@@ -326,11 +327,7 @@ const OwnerDashboard = () => {
 
     // Loading state
     if (dashLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-        );
+        return <OwnerDashboardSkeleton />;
     }
 
     // Access denied state

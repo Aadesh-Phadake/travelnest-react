@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShieldCheck, ShieldX, Trash2 } from 'lucide-react';
 import { useAdminUsers } from '../../hooks/admin/useAdminUsers';
 import api from '../../api/axios';
+import toastConfirm from '../../utils/toastConfirm';
 
 const AdminUsers = ({ userRole }) => {
   const { users, updateMembership, removeUser } = useAdminUsers();
@@ -15,8 +16,9 @@ const AdminUsers = ({ userRole }) => {
     updateMembership(id, current);
   };
 
-  const handleDeleteUser = (id) => {
-    if (window.confirm('Delete this user and all their bookings?')) {
+  const handleDeleteUser = async (id) => {
+    const confirmed = await toastConfirm('Delete this user and all their bookings?');
+    if (confirmed) {
       removeUser(id);
     }
   };

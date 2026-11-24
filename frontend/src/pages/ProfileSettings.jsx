@@ -1,6 +1,7 @@
 import { Camera, Eye, EyeOff, Lock, Save, Settings, Upload, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { ProfileSettingsSkeleton } from '../components/skeletons';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
@@ -205,13 +206,7 @@ const ProfileSettings = () => {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-        );
-    }
+    if (loading) return <ProfileSettingsSkeleton />;
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6">

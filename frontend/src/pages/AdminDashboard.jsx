@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useAdminDashboard } from '../hooks/admin/useAdminDashboard';
 
+import { AdminDashboardSkeleton } from '../components/skeletons';
 import AdminOverview from '../components/admin/AdminOverview';
 import AdminUsers from '../components/admin/AdminUsers';
 import AdminHotels from '../components/admin/AdminHotels';
@@ -63,16 +64,7 @@ const AdminDashboard = () => {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-[80vh] flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="flex flex-col items-center gap-3 text-gray-500">
-          <Loader2 className="w-8 h-8 animate-spin" />
-          <p>Loading admin dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <AdminDashboardSkeleton />;
 
   return (
     <div className="min-h-[80vh] bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
