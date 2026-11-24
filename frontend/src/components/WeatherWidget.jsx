@@ -51,9 +51,16 @@ const WeatherWidget = ({ location, country }) => {
     }, [location, country, API_KEY]);
 
     if (loading) return (
-        <div className="flex items-center gap-2 text-gray-400 text-sm mt-2">
-            <Loader className="animate-spin w-4 h-4"/> 
-            <span>Checking forecast...</span>
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4 shadow-sm flex items-center justify-between min-w-[200px] mt-2 animate-pulse shimmer">
+            <div className="space-y-2">
+                <div className="h-2.5 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
+                <div className="flex items-end gap-2">
+                    <div className="h-7 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
+                    <div className="h-4 w-12 bg-gray-200 dark:bg-gray-700 rounded" />
+                </div>
+                <div className="h-2.5 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
+            </div>
+            <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full" />
         </div>
     );
     

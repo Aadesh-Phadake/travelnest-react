@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useAdminHotels } from '../../hooks/admin/useAdminHotels';
 import api from '../../api/axios';
+import toastConfirm from '../../utils/toastConfirm';
 
 const AdminHotels = ({ userRole }) => {
   const { hotels, removeHotel } = useAdminHotels();
@@ -11,8 +12,9 @@ const AdminHotels = ({ userRole }) => {
   const [bookingHistoryByHotel, setBookingHistoryByHotel] = useState({});
   const [historyErrorByHotel, setHistoryErrorByHotel] = useState({});
 
-  const handleDeleteHotel = (id) => {
-    if (window.confirm('Delete this hotel permanently?')) {
+  const handleDeleteHotel = async (id) => {
+    const confirmed = await toastConfirm('Delete this hotel permanently?');
+    if (confirmed) {
       removeHotel(id);
     }
   };

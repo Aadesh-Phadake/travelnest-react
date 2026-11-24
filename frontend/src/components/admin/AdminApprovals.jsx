@@ -1,4 +1,5 @@
 import React from 'react';
+import toastConfirm from '../../utils/toastConfirm';
 import { useAdminApprovals } from '../../hooks/admin/useAdminApprovals';
 
 const AdminApprovals = ({ userRole }) => {
@@ -15,8 +16,9 @@ const AdminApprovals = ({ userRole }) => {
     approveMgr(id);
   };
 
-  const handleRejectManager = (id) => {
-    if (window.confirm('Reject this manager request?')) {
+  const handleRejectManager = async (id) => {
+    const confirmed = await toastConfirm('Reject this manager request?');
+    if (confirmed) {
       rejectMgr(id);
     }
   };
@@ -25,8 +27,9 @@ const AdminApprovals = ({ userRole }) => {
     approveHtl(id);
   };
 
-  const handleRejectHotel = (id) => {
-    if (window.confirm('Reject this hotel listing?')) {
+  const handleRejectHotel = async (id) => {
+    const confirmed = await toastConfirm('Reject this hotel listing?');
+    if (confirmed) {
       rejectHtl(id);
     }
   };

@@ -29,7 +29,53 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-      <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
+      <Toaster
+          position="top-center"
+          gutter={12}
+          containerStyle={{ top: 20 }}
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#fff',
+              color: '#1f2937',
+              padding: '14px 20px',
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontWeight: '500',
+              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.12)',
+              border: '1px solid #f3f4f6',
+              maxWidth: '420px',
+            },
+            success: {
+              duration: 3000,
+              iconTheme: {
+                primary: '#22c55e',
+                secondary: '#fff',
+              },
+              style: {
+                border: '1px solid #dcfce7',
+                background: '#f0fdf4',
+              },
+            },
+            error: {
+              duration: 4000,
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fff',
+              },
+              style: {
+                border: '1px solid #fecaca',
+                background: '#fef2f2',
+              },
+            },
+            loading: {
+              style: {
+                border: '1px solid #e0e7ff',
+                background: '#eef2ff',
+              },
+            },
+          }}
+        />
       
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <Navbar />

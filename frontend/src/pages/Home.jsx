@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
 import ListingCard from '../components/ListingCard';
+import { ListingGridSkeleton } from '../components/skeletons';
 import { Search, Filter, Star } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Home = () => {
     const [listings, setListings] = useState([]);
@@ -32,6 +34,7 @@ const Home = () => {
         } catch (err) {
             console.error("Error fetching listings:", err);
             setError("Failed to load hotels.");
+            toast.error('Failed to load hotels. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -125,9 +128,9 @@ const Home = () => {
 
             {/* --- Results Section --- */}
             {loading ? (
-                <div className="min-h-[50vh] flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
-                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                    <p className="mt-4 text-gray-500">Finding best places...</p>
+                <div>
+                    <div className="h-4 w-36 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-4" />
+                    <ListingGridSkeleton count={8} />
                 </div>
             ) : error ? (
                 <div className="text-center py-10">

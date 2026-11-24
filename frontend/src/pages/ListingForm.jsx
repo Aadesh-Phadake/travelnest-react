@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
+import { ListingFormSkeleton } from '../components/skeletons';
 import { Plus, X, Save, Loader, ArrowLeft, Upload, FileText, Image as ImageIcon } from 'lucide-react';
 
 const ListingForm = () => {
@@ -373,11 +374,7 @@ const ListingForm = () => {
     };
 
     if (loading && isEditMode && !formData.title) {
-        return (
-            <div className="flex justify-center items-center h-screen">
-                <Loader className="w-10 h-10 animate-spin text-primary" />
-            </div>
-        );
+        return <ListingFormSkeleton />;
     }
 
     return (

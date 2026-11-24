@@ -6,6 +6,7 @@ import { logout } from '../redux/authSlice';
 import { Menu, X } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Navbar = () => {
     const { theme, toggleTheme } = useTheme();
@@ -18,6 +19,7 @@ const Navbar = () => {
 
     const handleLogout = () => {
         dispatch(logout()); // Clear Redux state
+        toast.success('Logged out successfully');
         navigate('/login');
     };
 
